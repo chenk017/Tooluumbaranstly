@@ -31,8 +31,9 @@ jobs:
           dotnet-version: '8.0.130'
 
 
-      - name: Check dotnet
+      - name: Check dotnet version
         run: |
+          echo "=== DOTNET VERSION ==="
           dotnet --version
           dotnet --list-sdks
 
@@ -42,13 +43,18 @@ jobs:
           dotnet workload install android
 
 
-      - name: Check project files
+      - name: Find project target
         run: |
-          echo "=== Find csproj ==="
+          echo "=== ALL PROJECT FILE ==="
           find . -name "*.csproj"
 
-          echo "=== Check Target Framework ==="
-          grep -R "TargetFramework" UmbaranAssetBrowserUI
+          echo ""
+          echo "=== ALL TARGET FRAMEWORK ==="
+          grep -R "TargetFramework" .
+
+          echo ""
+          echo "=== SEARCH ANDROID 21 ==="
+          grep -R "android21" . || true
 
 
       - name: Restore Android project
