@@ -1,0 +1,37 @@
+using System;
+using System.Reflection;
+
+class CheckTextureAPI
+{
+    static void Main()
+    {
+        var dll = Assembly.LoadFrom(
+            "../Libs/AssetsTools.NET.Texture.dll"
+        );
+
+        foreach(var type in dll.GetTypes())
+        {
+            if(type.Name.Contains("Texture") ||
+               type.Name.Contains("Encoder"))
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "CLASS: " + type.FullName
+                );
+
+
+                foreach(var method in type.GetMethods())
+                {
+                    if(method.Name.Contains("GetTextureData") ||
+                       method.Name.Contains("Encode") ||
+                       method.Name.Contains("ReadTexture"))
+                    {
+                        Console.WriteLine(
+                            method.ToString()
+                        );
+                    }
+                }
+            }
+        }
+    }
+}

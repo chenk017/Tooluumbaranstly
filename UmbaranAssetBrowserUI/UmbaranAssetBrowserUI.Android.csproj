@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+
+  <PropertyGroup>
+
+    <OutputType>Exe</OutputType>
+
+    <TargetFramework>net8.0-android</TargetFramework>
+
+    <Nullable>enable</Nullable>
+
+    <ApplicationTitle>Umbaran Asset Browser</ApplicationTitle>
+
+    <ApplicationId>com.umbaran.assetbrowser</ApplicationId>
+
+    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+
+    <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
+
+  </PropertyGroup>
+
+
+  <ItemGroup>
+
+    <PackageReference Include="Avalonia"
+                      Version="11.2.3" />
+
+    <PackageReference Include="Avalonia.Android"
+                      Version="11.2.3" />
+
+    <PackageReference Include="Avalonia.Themes.Fluent"
+                      Version="11.2.3" />
+
+    <PackageReference Include="Avalonia.Fonts.Inter"
+                      Version="11.2.3" />
+
+  </ItemGroup>
+
+
+</Project>

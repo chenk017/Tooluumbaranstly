@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="UmbaranAssetBrowserUI.Views.AssetListView">
+
+    <Border Padding="10">
+
+        <StackPanel>
+
+            <TextBlock Text="Assets"
+                       FontSize="20"/>
+
+            <ListBox Margin="0,10,0,0">
+
+                <ListBoxItem>
+                    GameObject
+                </ListBoxItem>
+
+                <ListBoxItem>
+                    Transform
+                </ListBoxItem>
+
+                <ListBoxItem>
+                    Mesh
+                </ListBoxItem>
+
+            </ListBox>
+
+        </StackPanel>
+
+    </Border>
+
+</UserControl>
