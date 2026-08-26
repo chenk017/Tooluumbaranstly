@@ -31,10 +31,13 @@ jobs:
           dotnet-version: '8.0.130'
 
 
-      - name: Check dotnet
+      - name: Verify .NET SDK
         run: |
           echo "=== DOTNET VERSION ==="
           dotnet --version
+
+          echo ""
+          echo "=== INSTALLED SDK ==="
           dotnet --list-sdks
 
 
@@ -43,36 +46,38 @@ jobs:
           dotnet workload install android
 
 
-      - name: Debug Project Location
+      - name: Debug project
         run: |
-          echo "=== CURRENT DIRECTORY ==="
+          echo "=== CURRENT PATH ==="
           pwd
 
           echo ""
-          echo "=== ALL CSPROJ ==="
+          echo "=== PROJECT LIST ==="
           find . -name "*.csproj"
 
           echo ""
-          echo "=== ANDROID PROJECT CONTENT ==="
+          echo "=== ANDROID PROJECT ==="
           cat ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
           echo ""
-          echo "=== SEARCH android21 ==="
+          echo "=== SEARCH ANDROID 21 ==="
           grep -R "android21" . || true
 
           echo ""
-          echo "=== SEARCH TargetFramework ==="
+          echo "=== SEARCH TARGET FRAMEWORK ==="
           grep -R "TargetFramework" .
 
 
       - name: Restore Android project
         run: |
-          dotnet restore ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+          dotnet restore \
+          ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
       - name: Build APK
         run: |
-          dotnet build ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+          dotnet build \
+          ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
           -c Release \
           -f net8.0-android34.0 \
           /p:AndroidPackageFormat=apk
