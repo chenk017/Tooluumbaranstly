@@ -31,7 +31,7 @@ jobs:
           dotnet-version: '8.0.130'
 
 
-      - name: Check dotnet version
+      - name: Check dotnet
         run: |
           echo "=== DOTNET VERSION ==="
           dotnet --version
@@ -43,18 +43,26 @@ jobs:
           dotnet workload install android
 
 
-      - name: Find project target
+      - name: Debug Project Location
         run: |
-          echo "=== ALL PROJECT FILE ==="
+          echo "=== CURRENT DIRECTORY ==="
+          pwd
+
+          echo ""
+          echo "=== ALL CSPROJ ==="
           find . -name "*.csproj"
 
           echo ""
-          echo "=== ALL TARGET FRAMEWORK ==="
-          grep -R "TargetFramework" .
+          echo "=== ANDROID PROJECT CONTENT ==="
+          cat ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
           echo ""
-          echo "=== SEARCH ANDROID 21 ==="
+          echo "=== SEARCH android21 ==="
           grep -R "android21" . || true
+
+          echo ""
+          echo "=== SEARCH TargetFramework ==="
+          grep -R "TargetFramework" .
 
 
       - name: Restore Android project
