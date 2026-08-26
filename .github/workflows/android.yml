@@ -6,28 +6,36 @@ on:
     branches:
       - master
 
+
 jobs:
-  build-android:
+
+  android-build:
 
     runs-on: ubuntu-latest
 
+
     steps:
 
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
 
-      - name: Setup .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0.130'
+
+
+      - name: Check SDK
+        run: |
+          dotnet --version
 
 
       - name: Install Android workload
@@ -35,22 +43,28 @@ jobs:
           dotnet workload install android
 
 
-      - name: Restore
+      - name: Check Android Project
         run: |
-          dotnet restore UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+          echo "=== Android csproj ==="
+          cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+
+      - name: Restore Android project
+        run: |
+          dotnet restore ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
       - name: Build APK
         run: |
-          dotnet build UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+          dotnet build ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
           -c Release \
-          -f net8.0-android \
+          -f net8.0-android34.0 \
           /p:AndroidPackageFormat=apk
 
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: UmbaranAssetBrowser-debug-apk
+          name: UmbaranAssetBrowser-APK
           path: |
-            **/bin/Release/**/*.apk
+            UmbaranAssetBrowserUI/bin/Release/**/*.apk
