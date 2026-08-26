@@ -1,10 +1,8 @@
 name: Build Android APK
 
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
 
 
 jobs:
@@ -33,9 +31,10 @@ jobs:
           dotnet-version: '8.0.130'
 
 
-      - name: Check SDK
+      - name: Check dotnet
         run: |
           dotnet --version
+          dotnet --list-sdks
 
 
       - name: Install Android workload
@@ -43,10 +42,13 @@ jobs:
           dotnet workload install android
 
 
-      - name: Check Android Project
+      - name: Check project files
         run: |
-          echo "=== Android csproj ==="
-          cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+          echo "=== Find csproj ==="
+          find . -name "*.csproj"
+
+          echo "=== Check Target Framework ==="
+          grep -R "TargetFramework" UmbaranAssetBrowserUI
 
 
       - name: Restore Android project
