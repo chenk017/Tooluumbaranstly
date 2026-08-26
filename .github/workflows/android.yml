@@ -4,10 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - master
 
 jobs:
-
   build-android:
 
     runs-on: ubuntu-latest
@@ -37,16 +36,16 @@ jobs:
 
 
       - name: Restore
-  run: |
-    dotnet restore UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        run: |
+          dotnet restore UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
       - name: Build APK
-  run: |
-    dotnet build UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
-    -c Release \
-    -f net8.0-android \
-    /p:AndroidPackageFormat=apk
+        run: |
+          dotnet build UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+          -c Release \
+          -f net8.0-android \
+          /p:AndroidPackageFormat=apk
 
 
       - name: Upload APK
