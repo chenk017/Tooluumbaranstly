@@ -1,6 +1,5 @@
 name: Build Android APK
 
-
 on:
   workflow_dispatch:
 
@@ -10,7 +9,6 @@ jobs:
   android-build:
 
     runs-on: ubuntu-latest
-
 
     steps:
 
@@ -31,13 +29,13 @@ jobs:
           dotnet-version: '8.0.130'
 
 
-      - name: Verify .NET SDK
+      - name: Verify SDK
         run: |
           echo "=== DOTNET VERSION ==="
           dotnet --version
 
           echo ""
-          echo "=== INSTALLED SDK ==="
+          echo "=== SDK LIST ==="
           dotnet --list-sdks
 
 
@@ -46,38 +44,38 @@ jobs:
           dotnet workload install android
 
 
-      - name: Debug project
+      - name: Find Android Target Source
         run: |
-          echo "=== CURRENT PATH ==="
-          pwd
-
-          echo ""
-          echo "=== PROJECT LIST ==="
+          echo "=== PROJECT FILES ==="
           find . -name "*.csproj"
 
           echo ""
-          echo "=== ANDROID PROJECT ==="
-          cat ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+          echo "=== PROPS AND TARGETS ==="
+          find . -name "*.props" -o -name "*.targets"
 
           echo ""
-          echo "=== SEARCH ANDROID 21 ==="
+          echo "=== SEARCH android21 ==="
           grep -R "android21" . || true
 
           echo ""
-          echo "=== SEARCH TARGET FRAMEWORK ==="
+          echo "=== SEARCH TargetFramework ==="
           grep -R "TargetFramework" .
 
 
-      - name: Restore Android project
+      - name: Show Android Project
         run: |
-          dotnet restore \
-          ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+          echo "=== Android csproj ==="
+          cat ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+
+      - name: Restore Android Project
+        run: |
+          dotnet restore ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
       - name: Build APK
         run: |
-          dotnet build \
-          ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+          dotnet build ./UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
           -c Release \
           -f net8.0-android34.0 \
           /p:AndroidPackageFormat=apk
