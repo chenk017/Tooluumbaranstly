@@ -4,12 +4,13 @@ using Avalonia.Markup.Xaml;
 
 namespace UmbaranAssetBrowserUI;
 
-public partial class App : Application
+public partial class App : Avalonia.Application
 {
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
     }
+
 
     public override void OnFrameworkInitializationCompleted()
     {
