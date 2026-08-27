@@ -1,65 +1,33 @@
-name: Build Android APK
+- name: Install Android SDK
+  run: |
+    apt update
+    apt install -y wget unzip openjdk-17-jdk
 
-on:
-  workflow_dispatch:
+    mkdir -p $HOME/android-sdk
 
+    cd $HOME/android-sdk
 
-jobs:
+    wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
 
-  build:
+    unzip commandlinetools-linux-11076708_latest.zip
 
-    runs-on: ubuntu-latest
+    mkdir -p cmdline-tools/latest
 
-    container:
-      image: mcr.microsoft.com/dotnet/sdk:8.0
-
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
+    mv cmdline-tools/* cmdline-tools/latest/ || true
 
 
-      - name: Install Java
-        run: |
-          apt update
-          apt install -y openjdk-17-jdk
+- name: Setup Android Environment
+  run: |
+    echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+    echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+    echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
 
-      - name: Check SDK
-        run: |
-          dotnet --version
-          dotnet --list-sdks
+- name: Install Android Packages
+  run: |
+    yes | sdkmanager --licenses
 
-
-      - name: Install Android workload
-        run: |
-          dotnet workload install android
-
-
-      - name: Check project
-        run: |
-          cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
-
-
-      - name: Restore
-        run: |
-          dotnet restore \
-          UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
-
-
-      - name: Build APK
-        run: |
-          dotnet build \
-          UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
-          -c Release \
-          -f net8.0-android34.0 \
-          /p:AndroidPackageFormat=apk
-
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: UmbaranAssetBrowser.apk
-          path: |
-            UmbaranAssetBrowserUI/bin/Release/**/*.apk
+    sdkmanager \
+    "platform-tools" \
+    "platforms;android-34" \
+    "build-tools;34.0.0"
