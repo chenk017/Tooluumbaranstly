@@ -20,14 +20,24 @@
     <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
 
 
-    <SupportedOSPlatformVersion>34</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
 
     <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
 
+
+    <!-- APK -->
+
     <AndroidPackageFormat>apk</AndroidPackageFormat>
 
+    <AndroidPackageFormats>apk</AndroidPackageFormats>
 
-    <!-- Stabil untuk APK pertama -->
+
+    <!-- Target Mi A1 -->
+
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+
+
+    <!-- Stabil dulu -->
 
     <PublishTrimmed>false</PublishTrimmed>
 
@@ -36,11 +46,9 @@
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
 
 
-    <!-- Generate APK installable -->
+    <!-- Jangan buat split -->
 
-    <AndroidPackageFormats>apk</AndroidPackageFormats>
-
-    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
 
 
   </PropertyGroup>
