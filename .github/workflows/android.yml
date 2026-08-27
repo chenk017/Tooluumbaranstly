@@ -1,33 +1,111 @@
-- name: Install Android SDK
-  run: |
-    apt update
-    apt install -y wget unzip openjdk-17-jdk
-
-    mkdir -p $HOME/android-sdk
-
-    cd $HOME/android-sdk
-
-    wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-
-    unzip commandlinetools-linux-11076708_latest.zip
-
-    mkdir -p cmdline-tools/latest
-
-    mv cmdline-tools/* cmdline-tools/latest/ || true
+name: Build Android APK
 
 
-- name: Setup Android Environment
-  run: |
-    echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-    echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-    echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+on:
+  workflow_dispatch:
 
 
-- name: Install Android Packages
-  run: |
-    yes | sdkmanager --licenses
+jobs:
 
-    sdkmanager \
-    "platform-tools" \
-    "platforms;android-34" \
-    "build-tools;34.0.0"
+  build-android:
+
+    runs-on: ubuntu-latest
+
+
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:8.0
+
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y wget unzip openjdk-17-jdk
+
+
+      - name: Check Java
+        run: |
+          java -version
+
+
+      - name: Check .NET
+        run: |
+          dotnet --version
+          dotnet --list-sdks
+
+
+      - name: Install Android SDK
+        run: |
+          mkdir -p $HOME/android-sdk
+
+          cd $HOME/android-sdk
+
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+
+          unzip commandlinetools-linux-11076708_latest.zip
+
+          mkdir -p cmdline-tools/latest
+
+          mv cmdline-tools/* cmdline-tools/latest/ || true
+
+
+      - name: Setup Android Environment
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+
+
+      - name: Install Android Packages
+        run: |
+          yes | sdkmanager --licenses
+
+          sdkmanager \
+          "platform-tools" \
+          "platforms;android-34" \
+          "build-tools;34.0.0"
+
+
+      - name: Install .NET Android workload
+        run: |
+          dotnet workload install android
+
+
+      - name: Verify Android SDK
+        run: |
+          sdkmanager --list | head -50
+
+
+      - name: Show Android Project
+        run: |
+          cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+
+      - name: Restore Project
+        run: |
+          dotnet restore \
+          UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+
+      - name: Build APK
+        run: |
+          dotnet build \
+          UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+          -c Release \
+          -f net8.0-android34.0 \
+          /p:AndroidPackageFormat=apk
+
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: UmbaranAssetBrowser-APK
+          path: |
+            UmbaranAssetBrowserUI/bin/Release/**/*.apk
