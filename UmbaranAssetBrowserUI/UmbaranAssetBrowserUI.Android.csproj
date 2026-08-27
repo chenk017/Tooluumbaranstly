@@ -15,6 +15,10 @@
 
     <ApplicationId>com.umbaran.assetbrowser</ApplicationId>
 
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+
 
     <SupportedOSPlatformVersion>34</SupportedOSPlatformVersion>
 
@@ -23,13 +27,20 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
 
 
-    <!-- Build pertama: stabilkan dulu -->
+    <!-- Stabil untuk APK pertama -->
 
     <PublishTrimmed>false</PublishTrimmed>
 
     <RunAOTCompilation>false</RunAOTCompilation>
 
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+
+
+    <!-- Generate APK installable -->
+
+    <AndroidPackageFormats>apk</AndroidPackageFormats>
+
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
 
 
   </PropertyGroup>
