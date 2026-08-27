@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-
   <PropertyGroup>
 
     <OutputType>Exe</OutputType>
@@ -18,6 +17,10 @@
     <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
 
     <AndroidPackageFormat>apk</AndroidPackageFormat>
+
+    <PublishTrimmed>false</PublishTrimmed>
+
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
 
   </PropertyGroup>
 
