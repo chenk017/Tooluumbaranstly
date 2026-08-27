@@ -2,110 +2,144 @@ name: Build Android APK
 
 
 on:
+
   workflow_dispatch:
 
 
 jobs:
 
-  build-android:
+  build:
 
     runs-on: ubuntu-latest
 
 
     container:
+
       image: mcr.microsoft.com/dotnet/sdk:8.0
 
 
     steps:
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+
+    - name: Checkout
+
+      uses: actions/checkout@v4
 
 
-      - name: Install dependencies
-        run: |
-          apt update
-          apt install -y wget unzip openjdk-17-jdk
+
+    - name: Install tools
+
+      run: |
+
+        apt update
+
+        apt install -y wget unzip openjdk-17-jdk
 
 
-      - name: Check Java
-        run: |
-          java -version
+
+    - name: Install Android SDK
+
+      run: |
+
+        mkdir -p $HOME/android-sdk
+
+        cd $HOME/android-sdk
 
 
-      - name: Check .NET
-        run: |
-          dotnet --version
-          dotnet --list-sdks
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
 
 
-      - name: Install Android SDK
-        run: |
-          mkdir -p $HOME/android-sdk
-
-          cd $HOME/android-sdk
-
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-
-          unzip commandlinetools-linux-11076708_latest.zip
-
-          mkdir -p cmdline-tools/latest
-
-          mv cmdline-tools/* cmdline-tools/latest/ || true
+        unzip commandlinetools-linux-11076708_latest.zip
 
 
-      - name: Setup Android Environment
-        run: |
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        mkdir -p cmdline-tools/latest
 
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+        mv cmdline-tools/* cmdline-tools/latest/ || true
 
 
-      - name: Install Android Packages
-        run: |
-          yes | sdkmanager --licenses
 
-          sdkmanager \
-          "platform-tools" \
-          "platforms;android-34" \
-          "build-tools;34.0.0"
+    - name: Setup Android Path
 
+      run: |
 
-      - name: Install .NET Android workload
-        run: |
-          dotnet workload install android
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
 
 
-      - name: Verify Android SDK
-        run: |
-          sdkmanager --list | head -50
+        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+        echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
 
-      - name: Show Android Project
-        run: |
-          cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+    - name: Install SDK packages
+
+      run: |
+
+        yes | sdkmanager --licenses
 
 
-      - name: Restore Project
-        run: |
-          dotnet restore \
-          UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        sdkmanager \
+
+        "platform-tools" \
+
+        "platforms;android-34" \
+
+        "build-tools;34.0.0"
 
 
-      - name: Build APK
-        run: |
-          dotnet build \
-          UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
-          -c Release \
-          -f net8.0-android34.0 \
-          /p:AndroidPackageFormat=apk
+
+    - name: Install Android workload
+
+      run: |
+
+        dotnet workload install android
 
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: UmbaranAssetBrowser-APK
-          path: |
-            UmbaranAssetBrowserUI/bin/Release/**/*.apk
+
+    - name: Restore
+
+      run: |
+
+        dotnet restore \
+
+        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+
+
+    - name: Publish APK
+
+      run: |
+
+        dotnet publish \
+
+        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+
+        -c Release \
+
+        -f net8.0-android34.0 \
+
+        /p:AndroidPackageFormat=apk
+
+
+
+    - name: Find APK
+
+      run: |
+
+        find . -name "*.apk"
+
+
+
+    - name: Upload APK
+
+      uses: actions/upload-artifact@v4
+
+      with:
+
+        name: UmbaranAssetBrowser-release
+
+        path: |
+
+          UmbaranAssetBrowserUI/bin/Release/**/*.apk
