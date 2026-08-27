@@ -23,10 +23,12 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
 
 
-    <!-- Hindari masalah Avalonia saat publish -->
+    <!-- Build pertama: stabilkan dulu -->
+
     <PublishTrimmed>false</PublishTrimmed>
 
-    <!-- Build lebih ringan di GitHub Actions -->
+    <RunAOTCompilation>false</RunAOTCompilation>
+
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
 
 
@@ -38,18 +40,14 @@
     <PackageReference Include="Avalonia"
                       Version="11.2.3" />
 
-
     <PackageReference Include="Avalonia.Android"
                       Version="11.2.3" />
-
 
     <PackageReference Include="Avalonia.Themes.Fluent"
                       Version="11.2.3" />
 
-
     <PackageReference Include="Avalonia.Fonts.Inter"
                       Version="11.2.3" />
-
 
   </ItemGroup>
 
