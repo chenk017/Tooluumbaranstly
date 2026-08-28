@@ -1,59 +1,42 @@
 name: Build Android APK
 
-
 on:
-
   workflow_dispatch:
 
-
 jobs:
-
   build:
 
     runs-on: ubuntu-latest
 
-
     steps:
-
 
     - name: Checkout
       uses: actions/checkout@v4
 
 
-
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: 17
-
-
-
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.408
+        dotnet-version: '8.0.408'
 
 
-
-    - name: Check SDK
+    - name: Check Dotnet
       run: |
         dotnet --version
         dotnet --list-sdks
 
 
+    - name: Force Android Target
+      run: |
+        sed -i 's/net8.0-android21.0/net8.0-android34.0/g' \
+        UmbaranAssetBrowserUI/*.csproj
+
+        grep -R "TargetFramework" UmbaranAssetBrowserUI/
+
 
     - name: Install Android workload
       run: |
-        dotnet workload install android
-
-
-
-    - name: Restore
-      run: |
-        dotnet restore \
-        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
-
+        dotnet workload install android --ignore-failed-sources
 
 
     - name: Publish APK
@@ -66,20 +49,9 @@ jobs:
         /p:AndroidPackageFormat=apk
 
 
-
-    - name: Check APK
-      run: |
-        find . -name "*.apk"
-        file $(find . -name "*.apk" | head -1)
-
-
-
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-
         name: UmbaranAssetBrowser-arm64
-
         path: |
-
           UmbaranAssetBrowserUI/bin/Release/**/*.apk
