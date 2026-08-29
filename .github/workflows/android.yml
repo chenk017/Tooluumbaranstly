@@ -13,35 +13,40 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
+
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
+
     - name: Check Environment
       run: |
+        echo "=== DOTNET VERSION ==="
         dotnet --version
+
+        echo "=== SDK LIST ==="
         dotnet --list-sdks
+
+        echo "=== TARGET FRAMEWORK ==="
         grep TargetFramework UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
 
     - name: Install Android Workload
       run: |
         dotnet workload install android
 
-    - name: Clean Old Build
-      run: |
-        dotnet clean \
-        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
-        -f net8.0-android34.0
 
     - name: Restore Android Project
       run: |
         dotnet restore \
         UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
         -p:TargetFramework=net8.0-android34.0
+
 
     - name: Build APK
       run: |
@@ -54,13 +59,16 @@ jobs:
         /p:AndroidPackageFormat=apk \
         /p:AndroidCreatePackagePerAbi=false
 
+
     - name: Find APK
       run: |
+        echo "=== APK FOUND ==="
         find UmbaranAssetBrowserUI/bin -name "*.apk"
+
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: UmbaranAssetBrowser-arm64
         path: |
-          UmbaranAssetBrowserUI/bin/**/*.apk
+          UmbaranAssetBrowserUI/bin/Release/**/*.apk
