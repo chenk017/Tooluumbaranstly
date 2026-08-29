@@ -46,6 +46,43 @@ jobs:
         UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
         -p:TargetFramework=net8.0-android34.0
 
+name: Build Umbaran Asset Browser APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Check Environment
+      run: |
+        dotnet --version
+        dotnet --list-sdks
+        grep TargetFramework UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+    - name: Clean Old Build
+      run: |
+        dotnet clean \
+        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+    - name: Restore Android Project
+      run: |
+        dotnet restore \
+        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
+        -p:TargetFramework=net8.0-android34.0
 
     - name: Build APK
       run: |
@@ -58,11 +95,9 @@ jobs:
         /p:AndroidPackageFormat=apk \
         /p:AndroidCreatePackagePerAbi=false
 
-
     - name: Find APK
       run: |
         find UmbaranAssetBrowserUI/bin -name "*.apk"
-
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
