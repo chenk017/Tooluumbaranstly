@@ -26,14 +26,14 @@ jobs:
 
     - name: Check Environment
       run: |
-        echo "=== DOTNET VERSION ==="
+        echo "=== DOTNET ==="
         dotnet --version
 
-        echo "=== SDK LIST ==="
+        echo "=== SDK ==="
         dotnet --list-sdks
 
-        echo "=== TARGET FRAMEWORK ==="
-        grep TargetFramework UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        echo "=== ANDROID PROJECT ==="
+        cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
     - name: Install Android Workload
@@ -41,11 +41,16 @@ jobs:
         dotnet workload install android
 
 
+    - name: Remove Old Build Cache
+      run: |
+        rm -rf UmbaranAssetBrowserUI/bin
+        rm -rf UmbaranAssetBrowserUI/obj
+
+
     - name: Restore Android Project
       run: |
         dotnet restore \
-        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
-        -p:TargetFramework=net8.0-android34.0
+        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
     - name: Build APK
@@ -62,7 +67,7 @@ jobs:
 
     - name: Find APK
       run: |
-        echo "=== APK FOUND ==="
+        echo "=== APK ==="
         find UmbaranAssetBrowserUI/bin -name "*.apk"
 
 
