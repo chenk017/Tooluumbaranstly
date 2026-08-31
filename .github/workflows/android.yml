@@ -6,19 +6,21 @@ on:
     branches:
       - master
 
+
 jobs:
 
   build-android:
 
     runs-on: ubuntu-latest
 
+
     steps:
 
-    - name: Checkout
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
 
-    - name: Setup .NET
+    - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
@@ -29,18 +31,25 @@ jobs:
         dotnet workload install android
 
 
-    - name: Check csproj
+    - name: Restore NuGet
       run: |
-        echo "=== CSProj size ==="
-        wc -c UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
-
-        echo "=== First lines ==="
-        head -20 UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        dotnet restore \
+        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
-    - name: Restore
+    - name: Check Project
       run: |
-        dotnet restore UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        echo "=== CSProj ==="
+        cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+        echo "=== Files ==="
+        ls -la UmbaranAssetBrowserUI
+
+
+    - name: Clean Build
+      run: |
+        rm -rf UmbaranAssetBrowserUI/bin
+        rm -rf UmbaranAssetBrowserUI/obj
 
 
     - name: Build APK
@@ -53,11 +62,12 @@ jobs:
 
     - name: Find APK
       run: |
-        find . -name "*.apk"
+        find UmbaranAssetBrowserUI -name "*.apk"
 
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: UmbaranAssetBrowserAPK
-        path: "**/*.apk"
+        path: |
+          UmbaranAssetBrowserUI/**/*.apk
