@@ -14,6 +14,7 @@
 
     <ImplicitUsings>enable</ImplicitUsings>
 
+
     <ApplicationTitle>Umbaran Asset Browser</ApplicationTitle>
 
     <ApplicationId>com.umbaran.assetbrowser</ApplicationId>
@@ -22,15 +23,15 @@
 
     <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
 
+
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
 
     <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 
+
     <AndroidPackageFormat>apk</AndroidPackageFormat>
 
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
-
-    <PublishTrimmed>false</PublishTrimmed>
 
   </PropertyGroup>
 
