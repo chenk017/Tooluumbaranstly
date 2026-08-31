@@ -12,11 +12,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    env:
-      DOTNET_ROOT: /usr/share/dotnet
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-
     steps:
 
     - name: Checkout Repository
@@ -40,13 +35,10 @@ jobs:
         UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
-    - name: Check Project Files
+    - name: Clean Build Cache
       run: |
-        echo "=== Android Project ==="
-        ls -la UmbaranAssetBrowserUI
-
-        echo "=== CSharp Files ==="
-        find UmbaranAssetBrowserUI -name "*.cs"
+        rm -rf UmbaranAssetBrowserUI/bin
+        rm -rf UmbaranAssetBrowserUI/obj
 
 
     - name: Build APK
@@ -69,4 +61,3 @@ jobs:
         name: UmbaranAssetBrowserAPK
         path: |
           UmbaranAssetBrowserUI/**/*.apk
-
