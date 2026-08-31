@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-
   <PropertyGroup>
 
     <OutputType>Exe</OutputType>
@@ -11,51 +10,32 @@
 
     <RootNamespace>UmbaranAssetBrowserUI</RootNamespace>
 
-
     <Nullable>enable</Nullable>
 
     <ImplicitUsings>enable</ImplicitUsings>
 
 
-    <!-- App Info -->
+    <ApplicationTitle>Umbaran Asset Browser</ApplicationTitle>
 
-    <ApplicationTitle>
-      Umbaran Asset Browser
-    </ApplicationTitle>
-
-    <ApplicationId>
-      com.umbaran.assetbrowser
-    </ApplicationId>
-
+    <ApplicationId>com.umbaran.assetbrowser</ApplicationId>
 
     <ApplicationVersion>1</ApplicationVersion>
 
     <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
 
 
-
-    <!-- Android -->
-
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
 
     <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
 
 
-    <RuntimeIdentifiers>
-      android-arm64
-    </RuntimeIdentifiers>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 
-
-
-    <!-- APK -->
 
     <AndroidPackageFormat>apk</AndroidPackageFormat>
 
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
 
-
-
-    <!-- Stabil Build -->
 
     <PublishTrimmed>false</PublishTrimmed>
 
@@ -64,34 +44,21 @@
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
 
 
-    <AndroidEnableMultiDex>true</AndroidEnableMultiDex>
-
-
   </PropertyGroup>
-
 
 
   <ItemGroup>
 
-
-    <PackageReference Include="Avalonia"
-                      Version="11.2.3" />
-
-
     <PackageReference Include="Avalonia.Android"
                       Version="11.2.3" />
-
 
     <PackageReference Include="Avalonia.Themes.Fluent"
                       Version="11.2.3" />
 
-
     <PackageReference Include="Avalonia.Fonts.Inter"
                       Version="11.2.3" />
 
-
   </ItemGroup>
-
 
 
 </Project>
