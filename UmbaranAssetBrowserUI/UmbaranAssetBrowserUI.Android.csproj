@@ -33,6 +33,20 @@
 
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
 
+
+    <!-- Disable trimming/AOT problem -->
+
+    <PublishTrimmed>false</PublishTrimmed>
+
+    <TrimMode>copyused</TrimMode>
+
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+
+    <RunAOTCompilation>false</RunAOTCompilation>
+
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+
+
   </PropertyGroup>
 
 
