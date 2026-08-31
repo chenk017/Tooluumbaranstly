@@ -14,11 +14,11 @@ jobs:
 
     steps:
 
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
 
 
-    - name: Setup .NET 8
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
@@ -29,16 +29,18 @@ jobs:
         dotnet workload install android
 
 
-    - name: Restore Android Project
+    - name: Check csproj
       run: |
-        dotnet restore \
-        UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        echo "=== CSProj size ==="
+        wc -c UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+
+        echo "=== First lines ==="
+        head -20 UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
-    - name: Clean Build Cache
+    - name: Restore
       run: |
-        rm -rf UmbaranAssetBrowserUI/bin
-        rm -rf UmbaranAssetBrowserUI/obj
+        dotnet restore UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
     - name: Build APK
@@ -46,18 +48,16 @@ jobs:
         dotnet build \
         UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
         -c Release \
-        -f net8.0-android34.0 \
-        --no-restore
+        -f net8.0-android34.0
 
 
     - name: Find APK
       run: |
-        find UmbaranAssetBrowserUI -name "*.apk"
+        find . -name "*.apk"
 
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: UmbaranAssetBrowserAPK
-        path: |
-          UmbaranAssetBrowserUI/**/*.apk
+        path: "**/*.apk"
