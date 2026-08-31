@@ -5,42 +5,30 @@
     <OutputType>Exe</OutputType>
 
     <TargetFramework>net8.0-android34.0</TargetFramework>
-    <TargetPlatformVersion>34.0</TargetPlatformVersion>
+
+    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
 
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- Android App Info -->
+    <!-- Android App -->
     <ApplicationTitle>Umbaran Asset Browser</ApplicationTitle>
     <ApplicationId>com.umbaran.assetbrowser</ApplicationId>
 
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
 
-
-    <!-- Android Minimum -->
-    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
-
-    <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
-
     <!-- Runtime -->
     <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 
-
     <!-- APK -->
     <AndroidPackageFormat>apk</AndroidPackageFormat>
-
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
 
-
-    <!-- Build Stability -->
+    <!-- Build -->
     <PublishTrimmed>false</PublishTrimmed>
     <RunAOTCompilation>false</RunAOTCompilation>
-    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
 
-
-    <!-- Avalonia Android -->
-    <AndroidEnableMultiDex>true</AndroidEnableMultiDex>
 
   </PropertyGroup>
 
