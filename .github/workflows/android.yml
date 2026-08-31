@@ -1,12 +1,21 @@
-name: Build Umbaran Asset Browser APK
+name: Build Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
 
 jobs:
+
   build-android:
 
     runs-on: ubuntu-latest
+
+    env:
+      DOTNET_ROOT: /usr/share/dotnet
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
     steps:
 
@@ -17,34 +26,12 @@ jobs:
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.130
-
-
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-
-    - name: Check Environment
-      run: |
-        echo "=== DOTNET ==="
-        dotnet --version
-
-        echo "=== SDK ==="
-        dotnet --list-sdks
-
-        echo "=== ANDROID PROJECT ==="
-        cat UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
+        dotnet-version: 8.0.x
 
 
     - name: Install Android Workload
       run: |
         dotnet workload install android
-
-
-    - name: Remove Old Build Cache
-      run: |
-        rm -rf UmbaranAssetBrowserUI/bin
-        rm -rf UmbaranAssetBrowserUI/obj
 
 
     - name: Restore Android Project
@@ -53,27 +40,33 @@ jobs:
         UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
+    - name: Check Project Files
+      run: |
+        echo "=== Android Project ==="
+        ls -la UmbaranAssetBrowserUI
+
+        echo "=== CSharp Files ==="
+        find UmbaranAssetBrowserUI -name "*.cs"
+
+
     - name: Build APK
       run: |
-        dotnet publish \
+        dotnet build \
         UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
         -c Release \
         -f net8.0-android34.0 \
-        -r android-arm64 \
-        --no-restore \
-        /p:AndroidPackageFormat=apk \
-        /p:AndroidCreatePackagePerAbi=false
+        --no-restore
 
 
     - name: Find APK
       run: |
-        echo "=== APK ==="
-        find UmbaranAssetBrowserUI/bin -name "*.apk"
+        find UmbaranAssetBrowserUI -name "*.apk"
 
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: UmbaranAssetBrowser-arm64
+        name: UmbaranAssetBrowserAPK
         path: |
-          UmbaranAssetBrowserUI/bin/Release/**/*.apk
+          UmbaranAssetBrowserUI/**/*.apk
+
