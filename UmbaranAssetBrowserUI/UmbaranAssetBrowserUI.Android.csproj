@@ -18,9 +18,12 @@
 
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
 
+    <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
+
     <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 
     <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
 
     <PublishTrimmed>false</PublishTrimmed>
     <RunAOTCompilation>false</RunAOTCompilation>
