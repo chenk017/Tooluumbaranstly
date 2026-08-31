@@ -2,58 +2,80 @@ name: Build Android APK
 
 
 on:
+
   workflow_dispatch:
+
   push:
+
     branches:
+
       - master
+
 
 
 jobs:
 
+
   build-android:
 
+
     runs-on: ubuntu-latest
+
 
 
     steps:
 
 
+
     - name: Checkout Repository
+
       uses: actions/checkout@v4
 
 
 
     - name: Setup .NET 8
+
       uses: actions/setup-dotnet@v4
+
       with:
+
         dotnet-version: 8.0.x
 
 
 
     - name: Install Android Workload
+
       run: |
+
         dotnet workload install android
 
 
 
-    - name: Clean Old Build
+    - name: Clean Build
+
       run: |
+
         rm -rf UmbaranAssetBrowserUI/bin
+
         rm -rf UmbaranAssetBrowserUI/obj
 
 
 
-    - name: Restore Android Project
+    - name: Restore
+
       run: |
+
         dotnet restore UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj
 
 
 
     - name: Build APK
+
       run: |
+
         dotnet build UmbaranAssetBrowserUI/UmbaranAssetBrowserUI.Android.csproj \
-          --configuration Release \
-          --framework net8.0-android34.0 \
+          -c Release \
+          -f net8.0-android34.0 \
           --no-restore \
           -p:PublishTrimmed=false \
           -p:RunAOTCompilation=false
@@ -61,17 +83,21 @@ jobs:
 
 
     - name: Find APK
+
       run: |
-        echo "Searching APK..."
+
         find UmbaranAssetBrowserUI -name "*.apk"
 
 
 
     - name: Upload APK
+
       uses: actions/upload-artifact@v4
+
       with:
 
         name: UmbaranAssetBrowserAPK
 
         path: |
+
           UmbaranAssetBrowserUI/**/*.apk

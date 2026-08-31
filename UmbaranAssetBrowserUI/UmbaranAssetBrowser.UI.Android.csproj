@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+
   <PropertyGroup>
 
     <OutputType>Exe</OutputType>
@@ -15,7 +16,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
 
 
-    <!-- Android App Info -->
     <ApplicationTitle>Umbaran Asset Browser</ApplicationTitle>
 
     <ApplicationId>com.umbaran.assetbrowser</ApplicationId>
@@ -25,51 +25,47 @@
     <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
 
 
-    <!-- Android -->
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
 
     <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
 
+
     <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 
 
-    <!-- APK -->
     <AndroidPackageFormat>apk</AndroidPackageFormat>
 
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
 
 
-    <!-- Build -->
+    <!-- Disable optimization issues -->
     <PublishTrimmed>false</PublishTrimmed>
 
     <RunAOTCompilation>false</RunAOTCompilation>
 
-    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
-
-
-    <!-- Avalonia Android -->
-    <UseMaui>false</UseMaui>
-
-    <AndroidEnableJetifier>true</AndroidEnableJetifier>
 
   </PropertyGroup>
 
 
+
   <ItemGroup>
 
-    <PackageReference Include="Avalonia"
-                      Version="11.2.3" />
 
+    <!-- Avalonia Android -->
     <PackageReference Include="Avalonia.Android"
                       Version="11.2.3" />
+
 
     <PackageReference Include="Avalonia.Themes.Fluent"
                       Version="11.2.3" />
 
+
     <PackageReference Include="Avalonia.Fonts.Inter"
                       Version="11.2.3" />
 
+
   </ItemGroup>
+
 
 
 </Project>
