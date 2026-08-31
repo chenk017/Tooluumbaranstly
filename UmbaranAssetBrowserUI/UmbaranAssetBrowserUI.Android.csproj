@@ -49,6 +49,9 @@
 
   <ItemGroup>
 
+    <PackageReference Include="Avalonia"
+                      Version="11.2.3" />
+
     <PackageReference Include="Avalonia.Android"
                       Version="11.2.3" />
 
