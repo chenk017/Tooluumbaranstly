@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(textoolwrap)
-
-set(CMAKE_CXX_STANDARD 17)
+project(TexToolWrap)
 
 add_library(
     textoolwrap
@@ -15,16 +13,9 @@ target_include_directories(
     textoolwrap
     PRIVATE
     .
-    ./PVRTexLib/Include
-    ./ispc/include
-    ./crunch/inc
-)
-
-
-target_compile_definitions(
-    textoolwrap
-    PRIVATE
-    TEXTTOOLWRAP_EXPORTS
+    PVRTexLib/Include
+    ispc/include
+    crunch/inc
 )
 
 
