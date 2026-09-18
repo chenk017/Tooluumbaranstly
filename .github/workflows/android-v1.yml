@@ -1,0 +1,42 @@
+name: UABEA Android V1
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Android workload
+        run: dotnet workload install android
+
+      - name: Restore
+        run: dotnet restore UABEA.Android.V1/UABEA.Android.V1.csproj
+
+      - name: Build APK
+        run: >
+          dotnet build
+          UABEA.Android.V1/UABEA.Android.V1.csproj
+          --configuration Release
+          --no-restore
+
+      - name: Find APK
+        run: |
+          echo "========== APK FILES =========="
+          find UABEA.Android.V1/bin -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: UABEA-Android-V1
+          path: UABEA.Android.V1/bin/**/*.apk
+          if-no-files-found: error

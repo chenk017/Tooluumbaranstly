@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+
+    <ApplicationId>com.sukma.uabea</ApplicationId>
+    <ApplicationTitle>UABEA Android V1</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+
+    <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <AndroidUseDesignerAssembly>true</AndroidUseDesignerAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UABEA.Core\UABEA.Core.csproj" />
+    <ProjectReference Include="..\TextureCore\TextureCore.csproj" />
+  </ItemGroup>
+
+</Project>
