@@ -299,12 +299,12 @@ public class MainActivity : Activity
     private string? GetDisplayName(
         global::Android.Net.Uri uri)
     {
-        using Android.Database.ICursor? cursor =
+        using global::Android.Database.ICursor? cursor =
             ContentResolver?.Query(
                 uri,
                 new string[]
                 {
-                    Android.Provider.OpenableColumns.DisplayName
+                    global::Android.Provider.OpenableColumns.DisplayName
                 },
                 null,
                 null,
@@ -315,7 +315,7 @@ public class MainActivity : Activity
 
         int nameIndex =
             cursor.GetColumnIndex(
-                Android.Provider.OpenableColumns.DisplayName);
+                global::Android.Provider.OpenableColumns.DisplayName);
 
         if (nameIndex < 0)
             return null;
