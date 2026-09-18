@@ -452,6 +452,30 @@ public class MainActivity : Activity
                     10,
                     10);
 
+                /*
+                 * Make each asset row clickable.
+                 */
+                item.Clickable = true;
+
+                item.Click +=
+                    delegate
+                    {
+                        status.Text =
+                            "\n===== SELECTED ASSET =====" +
+                            "\nIndex: " +
+                            asset.Index +
+                            "\nType: " +
+                            asset.TypeName +
+                            "\nClassID: " +
+                            asset.ClassId +
+                            "\nPathID: " +
+                            asset.PathId +
+                            "\nName: " +
+                            (string.IsNullOrEmpty(asset.Name)
+                                ? "(unnamed)"
+                                : asset.Name);
+                    };
+
                 assetList.AddView(item);
             }
         }
