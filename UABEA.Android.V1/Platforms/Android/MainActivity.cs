@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Android.App;
 using Android.Content;
 using Android.Graphics;
@@ -201,9 +202,11 @@ public class MainActivity : Activity
                 ex.Message;
         }
 
+        string? displayName = null;
+
         try
         {
-            string? displayName =
+            displayName =
                 GetDisplayName(uri);
 
             debug +=
@@ -228,7 +231,7 @@ public class MainActivity : Activity
             if (!string.IsNullOrEmpty(path))
             {
                 directPathExists =
-                    System.IO.File.Exists(path);
+                    File.Exists(path);
             }
 
             debug +=
@@ -242,16 +245,6 @@ public class MainActivity : Activity
                 ex.Message;
         }
 
-        /*
-         * IMPORTANT:
-         *
-         * For this debug build we do NOT yet copy
-         * content:// files into cache.
-         *
-         * We first want to see exactly what Android's
-         * file picker returns.
-         */
-
         if (resultCode != Result.Ok)
         {
             status.Text =
@@ -261,37 +254,70 @@ public class MainActivity : Activity
             return;
         }
 
-        if (!directPathExists)
+        assetList.RemoveAllViews();
+
+        /*
+         * If Android returned a real filesystem path,
+         * use it directly.
+         */
+        if (directPathExists)
         {
-            status.Text =
-                debug +
-                "\n\nURI received successfully." +
-                "\nBut it is NOT a direct filesystem path." +
-                "\n\nThis is probably a content:// URI." +
-                "\n\nNext step: copy URI → app cache.";
+            try
+            {
+                string path =
+                    uri.Path!;
+
+                status.Text =
+                    debug +
+                    "\n\nDirect filesystem path found." +
+                    "\nLoading Unity bundle...";
+
+                LoadUnityBundle(path);
+            }
+            catch (Exception ex)
+            {
+                status.Text =
+                    debug +
+                    "\n\nLOAD ERROR:\n" +
+                    ex;
+            }
 
             return;
         }
 
+        /*
+         * Android normally returns content:// URIs.
+         *
+         * Copy the selected document into the app cache,
+         * then pass the normal filesystem path to the
+         * proven UnityBundleLoader.
+         */
         try
         {
-            string path =
-                uri.Path!;
+            status.Text =
+                debug +
+                "\n\nContent URI detected." +
+                "\nCopying file to app cache...";
+
+            string cachePath =
+                CopyUriToCache(
+                    uri,
+                    displayName);
 
             status.Text =
                 debug +
-                "\n\nDirect filesystem path found." +
-                "\nLoading Unity bundle...";
+                "\n\nCached file:" +
+                "\n" +
+                cachePath +
+                "\n\nLoading Unity bundle...";
 
-            assetList.RemoveAllViews();
-
-            LoadUnityBundle(path);
+            LoadUnityBundle(cachePath);
         }
         catch (Exception ex)
         {
             status.Text =
                 debug +
-                "\n\nLOAD ERROR:\n" +
+                "\n\nCACHE / LOAD ERROR:\n" +
                 ex;
         }
     }
@@ -324,6 +350,70 @@ public class MainActivity : Activity
             return null;
 
         return cursor.GetString(nameIndex);
+    }
+
+    private string CopyUriToCache(
+        global::Android.Net.Uri uri,
+        string? displayName)
+    {
+        if (ContentResolver == null)
+            throw new InvalidOperationException(
+                "ContentResolver is null.");
+
+        Stream? input =
+            ContentResolver.OpenInputStream(uri);
+
+        if (input == null)
+            throw new IOException(
+                "Could not open input stream for URI.");
+
+        string safeName =
+            string.IsNullOrWhiteSpace(displayName)
+                ? "selected.unity3d"
+                : displayName;
+
+        foreach (char invalidChar
+            in Path.GetInvalidFileNameChars())
+        {
+            safeName =
+                safeName.Replace(
+                    invalidChar,
+                    '_');
+        }
+
+        string cacheDirectory =
+            CacheDir?.AbsolutePath
+            ?? throw new IOException(
+                "App cache directory is unavailable.");
+
+        string cachePath =
+            Path.Combine(
+                cacheDirectory,
+                safeName);
+
+        using (input)
+        using (FileStream output =
+            new FileStream(
+                cachePath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None))
+        {
+            input.CopyTo(output);
+        }
+
+        FileInfo info =
+            new FileInfo(cachePath);
+
+        if (!info.Exists)
+            throw new IOException(
+                "Cached file was not created.");
+
+        if (info.Length == 0)
+            throw new IOException(
+                "Cached file is empty.");
+
+        return cachePath;
     }
 
     private void LoadUnityBundle(
