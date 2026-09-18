@@ -21,15 +21,41 @@ public class MainActivity : Activity
     private TextView status = null!;
     private LinearLayout assetList = null!;
 
+    /*
+     * Keep the loaded bundle result in memory.
+     *
+     * This allows us to leave the Asset Browser,
+     * open the Inspector, and then return to the
+     * same asset list without loading the bundle again.
+     */
+    private UnityBundleLoadResult? loadedBundle;
+
+    /*
+     * Current screen state.
+     *
+     * false = Asset Browser
+     * true  = Inspector
+     */
+    private bool inspectorVisible;
+
+    /*
+     * Currently selected asset.
+     */
+    private UnityAssetInfo? selectedAsset;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+
+        inspectorVisible = false;
 
         BuildUi();
     }
 
     private void BuildUi()
     {
+        inspectorVisible = false;
+
         LinearLayout root =
             new LinearLayout(this);
 
@@ -98,6 +124,15 @@ public class MainActivity : Activity
         root.AddView(scroll);
 
         SetContentView(root);
+
+        /*
+         * If a bundle is already loaded, rebuild the
+         * asset browser from the existing result.
+         */
+        if (loadedBundle != null)
+        {
+            ShowAssetBrowser();
+        }
     }
 
     private void OpenUnityFile()
@@ -255,6 +290,15 @@ public class MainActivity : Activity
         }
 
         assetList.RemoveAllViews();
+
+        /*
+         * A new file was selected.
+         *
+         * Clear the previous loaded bundle because
+         * the browser must represent the new file.
+         */
+        loadedBundle = null;
+        selectedAsset = null;
 
         /*
          * If Android returned a real filesystem path,
@@ -424,60 +468,13 @@ public class MainActivity : Activity
             UnityBundleLoadResult result =
                 UnityBundleLoader.Load(path);
 
-            status.Text =
-                "\n===== UNITY BUNDLE =====" +
-                "\nLoaded: " +
-                result.CabName +
-                "\nAssets: " +
-                result.Assets.Count;
+            loadedBundle =
+                result;
 
-            foreach (UnityAssetInfo asset
-                in result.Assets)
-            {
-                TextView item =
-                    new TextView(this);
+            selectedAsset =
+                null;
 
-                item.Text =
-                    asset.ToString();
-
-                item.TextSize =
-                    14;
-
-                item.SetTextColor(
-                    Color.White);
-
-                item.SetPadding(
-                    10,
-                    10,
-                    10,
-                    10);
-
-                /*
-                 * Make each asset row clickable.
-                 */
-                item.Clickable = true;
-
-                item.Click +=
-                    delegate
-                    {
-                        status.Text =
-                            "\n===== SELECTED ASSET =====" +
-                            "\nIndex: " +
-                            asset.Index +
-                            "\nType: " +
-                            asset.TypeName +
-                            "\nClassID: " +
-                            asset.ClassId +
-                            "\nPathID: " +
-                            asset.PathId +
-                            "\nName: " +
-                            (string.IsNullOrEmpty(asset.Name)
-                                ? "(unnamed)"
-                                : asset.Name);
-                    };
-
-                assetList.AddView(item);
-            }
+            ShowAssetBrowser();
         }
         catch (Exception ex)
         {
@@ -485,5 +482,242 @@ public class MainActivity : Activity
                 "\nUNITY LOAD ERROR:\n" +
                 ex;
         }
+    }
+
+    private void ShowAssetBrowser()
+    {
+        inspectorVisible = false;
+
+        if (loadedBundle == null)
+        {
+            BuildUi();
+            return;
+        }
+
+        LinearLayout root =
+            new LinearLayout(this);
+
+        root.Orientation =
+            Orientation.Vertical;
+
+        root.SetPadding(
+            30,
+            40,
+            30,
+            30);
+
+        root.SetBackgroundColor(
+            Color.Black);
+
+        TextView title =
+            new TextView(this);
+
+        title.Text =
+            "UABEA Android V1";
+
+        title.TextSize =
+            24;
+
+        title.SetTextColor(
+            Color.White);
+
+        Button openButton =
+            new Button(this);
+
+        openButton.Text =
+            "OPEN UNITY3D";
+
+        openButton.Click +=
+            delegate
+            {
+                OpenUnityFile();
+            };
+
+        status =
+            new TextView(this);
+
+        status.Text =
+            "\n===== UNITY BUNDLE =====" +
+            "\nLoaded: " +
+            loadedBundle.CabName +
+            "\nAssets: " +
+            loadedBundle.Assets.Count;
+
+        status.TextSize =
+            16;
+
+        status.SetTextColor(
+            Color.White);
+
+        ScrollView scroll =
+            new ScrollView(this);
+
+        assetList =
+            new LinearLayout(this);
+
+        assetList.Orientation =
+            Orientation.Vertical;
+
+        scroll.AddView(
+            assetList);
+
+        root.AddView(
+            title);
+
+        root.AddView(
+            openButton);
+
+        root.AddView(
+            status);
+
+        root.AddView(
+            scroll);
+
+        SetContentView(
+            root);
+
+        foreach (UnityAssetInfo asset
+            in loadedBundle.Assets)
+        {
+            TextView item =
+                new TextView(this);
+
+            item.Text =
+                asset.ToString();
+
+            item.TextSize =
+                14;
+
+            item.SetTextColor(
+                Color.White);
+
+            item.SetPadding(
+                10,
+                10,
+                10,
+                10);
+
+            /*
+             * Make each asset row clickable.
+             */
+            item.Clickable =
+                true;
+
+            item.Click +=
+                delegate
+                {
+                    ShowInspector(asset);
+                };
+
+            assetList.AddView(
+                item);
+        }
+    }
+
+    private void ShowInspector(
+        UnityAssetInfo asset)
+    {
+        selectedAsset =
+            asset;
+
+        inspectorVisible =
+            true;
+
+        LinearLayout root =
+            new LinearLayout(this);
+
+        root.Orientation =
+            Orientation.Vertical;
+
+        root.SetPadding(
+            30,
+            40,
+            30,
+            30);
+
+        root.SetBackgroundColor(
+            Color.Black);
+
+        Button backButton =
+            new Button(this);
+
+        backButton.Text =
+            "← BACK";
+
+        backButton.Click +=
+            delegate
+            {
+                NavigateBack();
+            };
+
+        TextView title =
+            new TextView(this);
+
+        title.Text =
+            "INSPECTOR";
+
+        title.TextSize =
+            24;
+
+        title.SetTextColor(
+            Color.White);
+
+        TextView info =
+            new TextView(this);
+
+        info.Text =
+            "\n===== SELECTED ASSET =====" +
+            "\n\nIndex: " +
+            asset.Index +
+            "\nType: " +
+            asset.TypeName +
+            "\nClassID: " +
+            asset.ClassId +
+            "\nPathID: " +
+            asset.PathId +
+            "\nName: " +
+            (string.IsNullOrEmpty(asset.Name)
+                ? "(unnamed)"
+                : asset.Name);
+
+        info.TextSize =
+            16;
+
+        info.SetTextColor(
+            Color.White);
+
+        ScrollView scroll =
+            new ScrollView(this);
+
+        scroll.AddView(
+            info);
+
+        root.AddView(
+            backButton);
+
+        root.AddView(
+            title);
+
+        root.AddView(
+            scroll);
+
+        SetContentView(
+            root);
+    }
+
+    private void NavigateBack()
+    {
+        if (inspectorVisible)
+        {
+            ShowAssetBrowser();
+            return;
+        }
+
+        Finish();
+    }
+
+    public override void OnBackPressed()
+    {
+        NavigateBack();
     }
 }
