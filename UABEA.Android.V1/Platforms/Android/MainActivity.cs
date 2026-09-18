@@ -373,7 +373,7 @@ public class MainActivity : Activity
                 : displayName;
 
         foreach (char invalidChar
-            in Path.GetInvalidFileNameChars())
+            in System.IO.Path.GetInvalidFileNameChars())
         {
             safeName =
                 safeName.Replace(
@@ -387,7 +387,7 @@ public class MainActivity : Activity
                 "App cache directory is unavailable.");
 
         string cachePath =
-            Path.Combine(
+            System.IO.Path.Combine(
                 cacheDirectory,
                 safeName);
 
