@@ -1,8 +1,8 @@
 using System;
 using Android.App;
 using Android.Content;
-using Android.OS;
 using Android.Graphics;
+using Android.OS;
 using Android.Views;
 using Android.Widget;
 using UABEA.Android.V1.Services;
@@ -101,18 +101,27 @@ public class MainActivity : Activity
 
     private void OpenUnityFile()
     {
-        Intent intent =
-            new Intent(Intent.ActionOpenDocument);
+        try
+        {
+            Intent intent =
+                new Intent(Intent.ActionOpenDocument);
 
-        intent.AddCategory(
-            Intent.CategoryOpenable);
+            intent.AddCategory(
+                Intent.CategoryOpenable);
 
-        intent.SetType(
-            "*/*");
+            intent.SetType(
+                "*/*");
 
-        StartActivityForResult(
-            intent,
-            PickFileRequest);
+            StartActivityForResult(
+                intent,
+                PickFileRequest);
+        }
+        catch (Exception ex)
+        {
+            status.Text =
+                "\nOPEN ERROR:\n" +
+                ex.Message;
+        }
     }
 
     protected override void OnActivityResult(
@@ -128,22 +137,138 @@ public class MainActivity : Activity
         if (requestCode != PickFileRequest)
             return;
 
-        if (resultCode != Result.Ok ||
-            data == null)
+        string debug =
+            "\n===== PICKER DEBUG =====";
+
+        debug +=
+            "\nResultCode = " +
+            resultCode;
+
+        debug +=
+            "\nData = " +
+            (data == null
+                ? "NULL"
+                : "NOT NULL");
+
+        if (data == null)
         {
             status.Text =
-                "\nFile selection cancelled.";
+                debug +
+                "\n\nNo Intent data returned.";
 
             return;
         }
 
-        global::Android.Net.Uri? uri =
+        Android.Net.Uri? uri =
             data.Data;
+
+        debug +=
+            "\nURI = " +
+            (uri == null
+                ? "NULL"
+                : uri.ToString());
 
         if (uri == null)
         {
             status.Text =
-                "\nNo file URI.";
+                debug +
+                "\n\nNo URI returned.";
+
+            return;
+        }
+
+        debug +=
+            "\nScheme = " +
+            (uri.Scheme ?? "NULL");
+
+        debug +=
+            "\nPath = " +
+            (uri.Path ?? "NULL");
+
+        try
+        {
+            string? mime =
+                ContentResolver?.GetType(uri);
+
+            debug +=
+                "\nMIME = " +
+                (mime ?? "NULL");
+        }
+        catch (Exception ex)
+        {
+            debug +=
+                "\nMIME ERROR = " +
+                ex.Message;
+        }
+
+        try
+        {
+            string? displayName =
+                GetDisplayName(uri);
+
+            debug +=
+                "\nDisplayName = " +
+                (displayName ?? "NULL");
+        }
+        catch (Exception ex)
+        {
+            debug +=
+                "\nDisplayName ERROR = " +
+                ex.Message;
+        }
+
+        bool directPathExists =
+            false;
+
+        try
+        {
+            string? path =
+                uri.Path;
+
+            if (!string.IsNullOrEmpty(path))
+            {
+                directPathExists =
+                    System.IO.File.Exists(path);
+            }
+
+            debug +=
+                "\nDirectFile.Exists = " +
+                directPathExists;
+        }
+        catch (Exception ex)
+        {
+            debug +=
+                "\nFile.Exists ERROR = " +
+                ex.Message;
+        }
+
+        /*
+         * IMPORTANT:
+         *
+         * For this debug build we do NOT yet copy
+         * content:// files into cache.
+         *
+         * We first want to see exactly what Android's
+         * file picker returns.
+         */
+
+        if (resultCode != Result.Ok)
+        {
+            status.Text =
+                debug +
+                "\n\nRESULT WAS NOT OK.";
+
+            return;
+        }
+
+        if (!directPathExists)
+        {
+            status.Text =
+                debug +
+                "\n\nURI received successfully." +
+                "\nBut it is NOT a direct filesystem path." +
+                "\n\nThis is probably a content:// URI." +
+                "\n\nNext step: copy URI → app cache.";
 
             return;
         }
@@ -151,80 +276,100 @@ public class MainActivity : Activity
         try
         {
             string path =
-                GetFilePath(uri);
+                uri.Path!;
 
-            if (string.IsNullOrEmpty(path))
-            {
-                status.Text =
-                    "\nCould not resolve file path.";
+            status.Text =
+                debug +
+                "\n\nDirect filesystem path found." +
+                "\nLoading Unity bundle...";
 
-                return;
-            }
+            assetList.RemoveAllViews();
 
             LoadUnityBundle(path);
         }
         catch (Exception ex)
         {
             status.Text =
-                "\nERROR:\n" + ex.Message;
+                debug +
+                "\n\nLOAD ERROR:\n" +
+                ex;
         }
     }
 
-    private string GetFilePath(
-        global::Android.Net.Uri uri)
+    private string? GetDisplayName(
+        Android.Net.Uri uri)
     {
-        string? path =
-            uri.Path;
+        using Android.Database.ICursor? cursor =
+            ContentResolver?.Query(
+                uri,
+                new string[]
+                {
+                    Android.Provider.OpenableColumns.DisplayName
+                },
+                null,
+                null,
+                null);
 
-        if (!string.IsNullOrEmpty(path) &&
-            System.IO.File.Exists(path))
-        {
-            return path;
-        }
+        if (cursor == null)
+            return null;
 
-        throw new InvalidOperationException(
-            "Selected file does not expose a direct filesystem path.");
+        int nameIndex =
+            cursor.GetColumnIndex(
+                Android.Provider.OpenableColumns.DisplayName);
+
+        if (nameIndex < 0)
+            return null;
+
+        if (!cursor.MoveToFirst())
+            return null;
+
+        return cursor.GetString(nameIndex);
     }
 
     private void LoadUnityBundle(
         string path)
     {
-        status.Text =
-            "\nLoading:\n" + path;
-
-        assetList.RemoveAllViews();
-
-        UnityBundleLoadResult result =
-            UnityBundleLoader.Load(path);
-
-        status.Text =
-            "\nLoaded: " +
-            result.CabName +
-            "\nAssets: " +
-            result.Assets.Count;
-
-        foreach (UnityAssetInfo asset
-            in result.Assets)
+        try
         {
-            TextView item =
-                new TextView(this);
+            UnityBundleLoadResult result =
+                UnityBundleLoader.Load(path);
 
-            item.Text =
-                asset.ToString();
+            status.Text =
+                "\n===== UNITY BUNDLE =====" +
+                "\nLoaded: " +
+                result.CabName +
+                "\nAssets: " +
+                result.Assets.Count;
 
-            item.TextSize =
-                14;
+            foreach (UnityAssetInfo asset
+                in result.Assets)
+            {
+                TextView item =
+                    new TextView(this);
 
-            item.SetTextColor(
-                Color.White);
+                item.Text =
+                    asset.ToString();
 
-            item.SetPadding(
-                10,
-                10,
-                10,
-                10);
+                item.TextSize =
+                    14;
 
-            assetList.AddView(item);
+                item.SetTextColor(
+                    Color.White);
+
+                item.SetPadding(
+                    10,
+                    10,
+                    10,
+                    10);
+
+                assetList.AddView(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            status.Text =
+                "\nUNITY LOAD ERROR:\n" +
+                ex;
         }
     }
 }
