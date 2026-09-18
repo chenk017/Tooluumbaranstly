@@ -159,7 +159,7 @@ public class MainActivity : Activity
             return;
         }
 
-        Android.Net.Uri? uri =
+        global::Android.Net.Uri? uri =
             data.Data;
 
         debug +=
@@ -297,7 +297,7 @@ public class MainActivity : Activity
     }
 
     private string? GetDisplayName(
-        Android.Net.Uri uri)
+        global::Android.Net.Uri uri)
     {
         using Android.Database.ICursor? cursor =
             ContentResolver?.Query(
