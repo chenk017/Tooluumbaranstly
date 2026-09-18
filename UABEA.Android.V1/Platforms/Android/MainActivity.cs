@@ -2,7 +2,7 @@ using System;
 using Android.App;
 using Android.Content;
 using Android.OS;
-using Android.Graphics.Color;
+using Android.Graphics;
 using Android.Views;
 using Android.Widget;
 using UABEA.Android.V1.Services;
@@ -137,7 +137,7 @@ public class MainActivity : Activity
             return;
         }
 
-        Android.Net.Uri? uri =
+        global::Android.Net.Uri? uri =
             data.Data;
 
         if (uri == null)
@@ -171,7 +171,7 @@ public class MainActivity : Activity
     }
 
     private string GetFilePath(
-        Android.Net.Uri uri)
+        global::Android.Net.Uri uri)
     {
         string? path =
             uri.Path;
