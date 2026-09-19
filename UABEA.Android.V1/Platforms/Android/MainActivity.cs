@@ -1,3 +1,4 @@
+
 using System;
 using System.IO;
 using Android.App;
@@ -6,6 +7,7 @@ using Android.Graphics;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
+using AssetsTools.NET.Texture;
 using UABEA.Android.V1.Services;
 using UABEAvalonia;
 
@@ -694,6 +696,79 @@ public class MainActivity : Activity
     info.SetTextColor(
         Color.White);
 
+    /*
+     * Texture preview.
+     *
+     * Only Texture2D assets get an ImageView.
+     */
+    ImageView preview =
+        new ImageView(this);
+
+    preview.SetBackgroundColor(
+        Color.DarkGray);
+
+    preview.SetScaleType(
+        ImageView.ScaleType.FitCenter);
+
+    preview.SetAdjustViewBounds(
+        true);
+
+    LinearLayout.LayoutParams previewParams =
+        new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MatchParent,
+            500);
+
+    preview.LayoutParameters =
+        previewParams;
+
+    TextView previewStatus =
+        new TextView(this);
+
+    previewStatus.TextSize =
+        14;
+
+    previewStatus.SetTextColor(
+        Color.LightGray);
+
+    if (asset.ClassId == 28)
+    {
+        try
+        {
+            Bitmap? bitmap =
+                BuildTexturePreview(
+                    asset);
+
+            if (bitmap != null)
+            {
+                preview.SetImageBitmap(
+                    bitmap);
+
+                previewStatus.Text =
+                    "\n===== TEXTURE PREVIEW =====" +
+                    "\nManaged decode: OK";
+            }
+            else
+            {
+                previewStatus.Text =
+                    "\n===== TEXTURE PREVIEW =====" +
+                    "\nDecode returned no image.";
+            }
+        }
+        catch (Exception ex)
+        {
+            previewStatus.Text =
+                "\n===== TEXTURE PREVIEW =====" +
+                "\nDECODE ERROR:" +
+                "\n" +
+                ex.Message;
+        }
+    }
+    else
+    {
+        previewStatus.Text =
+            "";
+    }
+
     ScrollView scroll =
         new ScrollView(this);
 
@@ -705,6 +780,15 @@ public class MainActivity : Activity
 
     root.AddView(
         title);
+
+    if (asset.ClassId == 28)
+    {
+        root.AddView(
+            previewStatus);
+
+        root.AddView(
+            preview);
+    }
 
     root.AddView(
         scroll);
@@ -842,6 +926,151 @@ private string GetTexture2DDataInfo(
             "\n" +
             ex.Message;
     }
+}
+
+private Bitmap? BuildTexturePreview(
+    UnityAssetInfo asset)
+{
+    if (asset.ClassId != 28)
+        return null;
+
+    if (loadedBundle == null)
+        throw new InvalidOperationException(
+            "Bundle is not loaded.");
+
+    AssetContainer? cont =
+        null;
+
+    foreach (AssetContainer candidate
+        in loadedBundle.Workspace.LoadedAssets.Values)
+    {
+        if (candidate.ClassId == asset.ClassId &&
+            candidate.PathId == asset.PathId)
+        {
+            cont =
+                candidate;
+
+            break;
+        }
+    }
+
+    if (cont == null)
+    {
+        throw new InvalidOperationException(
+            "AssetContainer not found.");
+    }
+
+    TexturePlugin.Texture2DMetadata metadata =
+        TexturePlugin.TextureInspector.ReadTexture2D(
+            loadedBundle.Workspace,
+            cont);
+
+    byte[] textureData =
+        TexturePlugin.TextureInspector.ReadTextureData(
+            loadedBundle.Workspace,
+            cont,
+            loadedBundle.Bundle);
+
+    TextureFormat format =
+        (TextureFormat)metadata.FormatId;
+
+    if (!TexturePlugin.TextureEncoderDecoder
+        .IsManagedDecodeSupported(format))
+    {
+        throw new InvalidOperationException(
+            "Managed decoder does not support TextureFormat " +
+            metadata.TextureFormat +
+            " (" +
+            metadata.FormatId +
+            ").");
+    }
+
+    byte[]? rgba =
+        TexturePlugin.TextureEncoderDecoder.Decode(
+            textureData,
+            metadata.Width,
+            metadata.Height,
+            format);
+
+    if (rgba == null)
+    {
+        throw new InvalidOperationException(
+            "Managed texture decoder returned null.");
+    }
+
+    int expectedLength =
+        checked(
+            metadata.Width *
+            metadata.Height *
+            4);
+
+    if (rgba.Length != expectedLength)
+    {
+        throw new InvalidOperationException(
+            "Decoded RGBA size mismatch. Expected " +
+            expectedLength +
+            " bytes, received " +
+            rgba.Length +
+            ".");
+    }
+
+    /*
+     * Android Bitmap uses ARGB pixels.
+     *
+     * TextureCore already performs the original
+     * UABEA R/B swap, so rgba[] is treated as:
+     *
+     *     R G B A
+     */
+    int[] pixels =
+        new int[
+            metadata.Width *
+            metadata.Height];
+
+    int pixelIndex =
+        0;
+
+    for (int i = 0;
+        i < rgba.Length;
+        i += 4)
+    {
+        int r =
+            rgba[i];
+
+        int g =
+            rgba[i + 1];
+
+        int b =
+            rgba[i + 2];
+
+        int a =
+            rgba[i + 3];
+
+        pixels[pixelIndex] =
+            (a << 24) |
+            (r << 16) |
+            (g << 8) |
+            b;
+
+        pixelIndex++;
+    }
+
+    Bitmap bitmap =
+        Bitmap.CreateBitmap(
+            metadata.Width,
+            metadata.Height,
+            Bitmap.Config.Argb8888);
+
+    bitmap.SetPixels(
+        pixels,
+        0,
+        metadata.Width,
+        0,
+        0,
+        metadata.Width,
+        metadata.Height);
+
+    return bitmap;
 }
 
     private void NavigateBack()
