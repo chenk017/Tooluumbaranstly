@@ -16,6 +16,12 @@
     <Reference Include="AssetsTools.NET.Texture">
       <HintPath>..\Libs\AssetsTools.NET.Texture.dll</HintPath>
     </Reference>
+
+    <Reference Include="AssetsTools.NET">
+      <HintPath>..\Libs\AssetsTools.NET.dll</HintPath>
+    </Reference>
+
+    <ProjectReference Include="..\UABEA.Core\UABEA.Core.csproj" />
   </ItemGroup>
 
 </Project>

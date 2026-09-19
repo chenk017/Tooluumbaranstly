@@ -19,8 +19,7 @@ public class MainActivity : Activity
 {
     private const int PickFileRequest = 1001;
 
-    private TextView status = null!;
-    private LinearLayout assetList = null!;
+    private TextView status = null!;                                            private LinearLayout assetList = null!;
 
     /*
      * Keep the loaded bundle result in memory.
@@ -717,8 +716,11 @@ private string GetTexture2DInfo(
         return "";
 
     if (loadedBundle == null)
-        return "\n\n===== TEXTURE2D =====" +
-               "\nBundle is not loaded.";
+    {
+        return
+            "\n\n===== TEXTURE2D =====" +
+            "\nBundle is not loaded.";
+    }
 
     AssetContainer? cont =
         null;
@@ -738,53 +740,36 @@ private string GetTexture2DInfo(
 
     if (cont == null)
     {
-        return "\n\n===== TEXTURE2D =====" +
-               "\nAssetContainer not found.";
+        return
+            "\n\n===== TEXTURE2D =====" +
+            "\nAssetContainer not found.";
     }
 
     try
     {
-        AssetTypeValueField texBaseField =
-            TexturePlugin.TextureHelper.GetByteArrayTexture(
+        TexturePlugin.Texture2DMetadata metadata =
+            TexturePlugin.TextureInspector.ReadTexture2D(
                 loadedBundle.Workspace,
                 cont);
-
-        if (texBaseField == null)
-        {
-            return "\n\n===== TEXTURE2D =====" +
-                   "\nTexture base field is null.";
-        }
-
-        TextureFile texFile =
-            TextureFile.ReadTextureFile(
-                texBaseField);
-
-        TextureFormat format =
-            (TextureFormat)texFile.m_TextureFormat;
-
-        TextureFile.StreamingInfo streamInfo =
-            texFile.m_StreamData;
 
         return
             "\n\n===== TEXTURE2D =====" +
             "\nWidth: " +
-            texFile.m_Width +
+            metadata.Width +
             "\nHeight: " +
-            texFile.m_Height +
+            metadata.Height +
             "\nTextureFormat: " +
-            format +
+            metadata.TextureFormat +
             "\nFormat ID: " +
-            texFile.m_TextureFormat +
+            metadata.FormatId +
             "\nMipCount: " +
-            texFile.m_MipCount +
+            metadata.MipCount +
             "\nStream Path: " +
-            (string.IsNullOrEmpty(streamInfo.path)
-                ? "(none)"
-                : streamInfo.path) +
+            metadata.StreamPath +
             "\nStream Offset: " +
-            streamInfo.offset +
+            metadata.StreamOffset +
             "\nStream Size: " +
-            streamInfo.size;
+            metadata.StreamSize;
     }
     catch (Exception ex)
     {
