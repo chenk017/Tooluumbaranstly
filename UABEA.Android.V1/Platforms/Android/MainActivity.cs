@@ -668,6 +668,9 @@ public class MainActivity : Activity
     string textureInfo =
         GetTexture2DInfo(asset);
 
+    string textureDataInfo =
+        GetTexture2DDataInfo(asset);
+
     info.Text =
         "\n===== SELECTED ASSET =====" +
         "\n\nIndex: " +
@@ -682,7 +685,8 @@ public class MainActivity : Activity
         (string.IsNullOrEmpty(asset.Name)
             ? "(unnamed)"
             : asset.Name) +
-        textureInfo;
+        textureInfo +
+        textureDataInfo;
 
     info.TextSize =
         16;
@@ -775,6 +779,65 @@ private string GetTexture2DInfo(
     {
         return
             "\n\n===== TEXTURE2D =====" +
+            "\nREAD ERROR:" +
+            "\n" +
+            ex.Message;
+    }
+}
+
+private string GetTexture2DDataInfo(
+    UnityAssetInfo asset)
+{
+    if (asset.ClassId != 28)
+        return "";
+
+    if (loadedBundle == null)
+    {
+        return
+            "\n\n===== TEXTURE DATA =====" +
+            "\nBundle is not loaded.";
+    }
+
+    AssetContainer? cont =
+        null;
+
+    foreach (AssetContainer candidate
+        in loadedBundle.Workspace.LoadedAssets.Values)
+    {
+        if (candidate.ClassId == asset.ClassId &&
+            candidate.PathId == asset.PathId)
+        {
+            cont =
+                candidate;
+
+            break;
+        }
+    }
+
+    if (cont == null)
+    {
+        return
+            "\n\n===== TEXTURE DATA =====" +
+            "\nAssetContainer not found.";
+    }
+
+    try
+    {
+        byte[] textureData =
+            TexturePlugin.TextureInspector.ReadTextureData(
+                loadedBundle.Workspace,
+                cont,
+                loadedBundle.Bundle);
+
+        return
+            "\n\n===== TEXTURE DATA =====" +
+            "\nResolved Bytes: " +
+            textureData.Length;
+    }
+    catch (Exception ex)
+    {
+        return
+            "\n\n===== TEXTURE DATA =====" +
             "\nREAD ERROR:" +
             "\n" +
             ex.Message;

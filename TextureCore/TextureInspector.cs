@@ -64,6 +64,161 @@ namespace TexturePlugin
             };
         }
 
+public static byte[] ReadTextureData(
+    AssetWorkspace workspace,
+    AssetContainer container,
+    AssetBundleFile bundle)
+{
+    if (workspace == null)
+        throw new ArgumentNullException(
+            nameof(workspace));
+
+    if (container == null)
+        throw new ArgumentNullException(
+            nameof(container));
+
+    if (bundle == null)
+        throw new ArgumentNullException(
+            nameof(bundle));
+
+    AssetTypeValueField texBaseField =
+        GetByteArrayTexture(
+            workspace,
+            container);
+
+    if (texBaseField == null)
+        throw new Exception(
+            "Texture base field is null.");
+
+    TextureFile texFile =
+        TextureFile.ReadTextureFile(
+            texBaseField);
+
+    if (texFile.pictureData != null &&
+        texFile.pictureData.Length > 0)
+    {
+        return texFile.pictureData;
+    }
+
+    TextureFile.StreamingInfo stream =
+        texFile.m_StreamData;
+
+    if (stream.size == 0)
+        throw new Exception(
+            "Texture has no inline data and stream size is 0.");
+
+    if (string.IsNullOrEmpty(stream.path))
+        throw new Exception(
+            "Texture has stream data but stream path is empty.");
+
+    string searchPath =
+        stream.path;
+
+    if (searchPath.StartsWith(
+            "archive:/",
+            StringComparison.OrdinalIgnoreCase))
+    {
+        searchPath =
+            searchPath.Substring(9);
+    }
+
+    searchPath =
+        Path.GetFileName(
+            searchPath);
+
+    AssetBundleDirectoryInfo? streamInfo =
+        null;
+
+    foreach (
+        AssetBundleDirectoryInfo dirInfo
+        in bundle
+            .BlockAndDirInfo
+            .DirectoryInfos)
+    {
+        if (string.Equals(
+                dirInfo.Name,
+                searchPath,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            streamInfo =
+                dirInfo;
+
+            break;
+        }
+    }
+
+    if (streamInfo == null)
+        throw new Exception(
+            ".resS file was not found in bundle DirectoryInfos: " +
+            searchPath);
+
+    ulong endPosition =
+        checked(
+            stream.offset +
+            stream.size);
+
+    if (stream.offset >
+        (ulong)long.MaxValue)
+    {
+        throw new Exception(
+            "Texture stream offset is too large.");
+    }
+
+    if (streamInfo.DecompressedSize < 0)
+    {
+        throw new Exception(
+            ".resS decompressed size is negative.");
+    }
+
+    if (endPosition >
+        (ulong)streamInfo.DecompressedSize)
+    {
+        throw new Exception(
+            "Texture range is outside the .resS data.");
+    }
+
+    if (stream.size >
+        (ulong)int.MaxValue)
+    {
+        throw new Exception(
+            "Texture stream size is too large.");
+    }
+
+    long absolutePosition =
+        checked(
+            streamInfo.Offset +
+            checked(
+                (long)stream.offset));
+
+    AssetsFileReader reader =
+        bundle.DataReader;
+
+    reader.Position =
+        absolutePosition;
+
+    byte[] resolvedData =
+        reader.ReadBytes(
+            checked(
+                (int)stream.size));
+
+    if (resolvedData.Length == 0)
+        throw new Exception(
+            ".resS returned 0 bytes.");
+
+    if ((ulong)resolvedData.Length !=
+        stream.size)
+    {
+        throw new Exception(
+            ".resS byte count mismatch. Expected " +
+            stream.size +
+            ", received " +
+            resolvedData.Length +
+            ".");
+    }
+
+    return resolvedData;
+}
+
         private static AssetTypeValueField GetByteArrayTexture(
             AssetWorkspace workspace,
             AssetContainer tex)
