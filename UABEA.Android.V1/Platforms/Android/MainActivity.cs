@@ -7,6 +7,7 @@ using Android.OS;
 using Android.Views;
 using Android.Widget;
 using UABEA.Android.V1.Services;
+using UABEAvalonia;
 
 namespace UABEA.Android.V1;
 
@@ -615,95 +616,185 @@ public class MainActivity : Activity
     }
 
     private void ShowInspector(
-        UnityAssetInfo asset)
+    UnityAssetInfo asset)
+{
+    selectedAsset =
+        asset;
+
+    inspectorVisible =
+        true;
+
+    LinearLayout root =
+        new LinearLayout(this);
+
+    root.Orientation =
+        Orientation.Vertical;
+
+    root.SetPadding(
+        30,
+        40,
+        30,
+        30);
+
+    root.SetBackgroundColor(
+        Color.Black);
+
+    Button backButton =
+        new Button(this);
+
+    backButton.Text =
+        "← BACK";
+
+    backButton.Click +=
+        delegate
+        {
+            NavigateBack();
+        };
+
+    TextView title =
+        new TextView(this);
+
+    title.Text =
+        "INSPECTOR";
+
+    title.TextSize =
+        24;
+
+    title.SetTextColor(
+        Color.White);
+
+    TextView info =
+        new TextView(this);
+
+    string textureInfo =
+        GetTexture2DInfo(asset);
+
+    info.Text =
+        "\n===== SELECTED ASSET =====" +
+        "\n\nIndex: " +
+        asset.Index +
+        "\nType: " +
+        asset.TypeName +
+        "\nClassID: " +
+        asset.ClassId +
+        "\nPathID: " +
+        asset.PathId +
+        "\nName: " +
+        (string.IsNullOrEmpty(asset.Name)
+            ? "(unnamed)"
+            : asset.Name) +
+        textureInfo;
+
+    info.TextSize =
+        16;
+
+    info.SetTextColor(
+        Color.White);
+
+    ScrollView scroll =
+        new ScrollView(this);
+
+    scroll.AddView(
+        info);
+
+    root.AddView(
+        backButton);
+
+    root.AddView(
+        title);
+
+    root.AddView(
+        scroll);
+
+    SetContentView(
+        root);
+}
+
+private string GetTexture2DInfo(
+    UnityAssetInfo asset)
+{
+    if (asset.ClassId != 28)
+        return "";
+
+    if (loadedBundle == null)
+        return "\n\n===== TEXTURE2D =====" +
+               "\nBundle is not loaded.";
+
+    AssetContainer? cont =
+        null;
+
+    foreach (AssetContainer candidate
+        in loadedBundle.Workspace.LoadedAssets.Values)
     {
-        selectedAsset =
-            asset;
+        if (candidate.ClassId == asset.ClassId &&
+            candidate.PathId == asset.PathId)
+        {
+            cont =
+                candidate;
 
-        inspectorVisible =
-            true;
-
-        LinearLayout root =
-            new LinearLayout(this);
-
-        root.Orientation =
-            Orientation.Vertical;
-
-        root.SetPadding(
-            30,
-            40,
-            30,
-            30);
-
-        root.SetBackgroundColor(
-            Color.Black);
-
-        Button backButton =
-            new Button(this);
-
-        backButton.Text =
-            "← BACK";
-
-        backButton.Click +=
-            delegate
-            {
-                NavigateBack();
-            };
-
-        TextView title =
-            new TextView(this);
-
-        title.Text =
-            "INSPECTOR";
-
-        title.TextSize =
-            24;
-
-        title.SetTextColor(
-            Color.White);
-
-        TextView info =
-            new TextView(this);
-
-        info.Text =
-            "\n===== SELECTED ASSET =====" +
-            "\n\nIndex: " +
-            asset.Index +
-            "\nType: " +
-            asset.TypeName +
-            "\nClassID: " +
-            asset.ClassId +
-            "\nPathID: " +
-            asset.PathId +
-            "\nName: " +
-            (string.IsNullOrEmpty(asset.Name)
-                ? "(unnamed)"
-                : asset.Name);
-
-        info.TextSize =
-            16;
-
-        info.SetTextColor(
-            Color.White);
-
-        ScrollView scroll =
-            new ScrollView(this);
-
-        scroll.AddView(
-            info);
-
-        root.AddView(
-            backButton);
-
-        root.AddView(
-            title);
-
-        root.AddView(
-            scroll);
-
-        SetContentView(
-            root);
+            break;
+        }
     }
+
+    if (cont == null)
+    {
+        return "\n\n===== TEXTURE2D =====" +
+               "\nAssetContainer not found.";
+    }
+
+    try
+    {
+        AssetTypeValueField texBaseField =
+            TexturePlugin.TextureHelper.GetByteArrayTexture(
+                loadedBundle.Workspace,
+                cont);
+
+        if (texBaseField == null)
+        {
+            return "\n\n===== TEXTURE2D =====" +
+                   "\nTexture base field is null.";
+        }
+
+        TextureFile texFile =
+            TextureFile.ReadTextureFile(
+                texBaseField);
+
+        TextureFormat format =
+            (TextureFormat)texFile.m_TextureFormat;
+
+        TextureFile.StreamingInfo streamInfo =
+            texFile.m_StreamData;
+
+        return
+            "\n\n===== TEXTURE2D =====" +
+            "\nWidth: " +
+            texFile.m_Width +
+            "\nHeight: " +
+            texFile.m_Height +
+            "\nTextureFormat: " +
+            format +
+            "\nFormat ID: " +
+            texFile.m_TextureFormat +
+            "\nMipCount: " +
+            texFile.m_MipCount +
+            "\nStream Path: " +
+            (string.IsNullOrEmpty(streamInfo.path)
+                ? "(none)"
+                : streamInfo.path) +
+            "\nStream Offset: " +
+            streamInfo.offset +
+            "\nStream Size: " +
+            streamInfo.size;
+    }
+    catch (Exception ex)
+    {
+        return
+            "\n\n===== TEXTURE2D =====" +
+            "\nREAD ERROR:" +
+            "\n" +
+            ex.Message;
+    }
+}
 
     private void NavigateBack()
     {
