@@ -20,6 +20,7 @@ namespace UABEA.Android.V1;
 public class MainActivity : Activity
 {
     private const int PickFileRequest = 1001;
+    private const int ExportPngRequest = 1002;
 
     private TextView status = null!;                                            private LinearLayout assetList = null!;
 
@@ -44,6 +45,15 @@ public class MainActivity : Activity
      * Currently selected asset.
      */
     private UnityAssetInfo? selectedAsset;
+    /*
+ * Texture selected for the Android save-document
+ * operation.
+ *
+ * We keep the asset reference instead of keeping a
+ * large Bitmap in memory while Android's document
+ * picker is open.
+ */
+    private UnityAssetInfo? pendingExportAsset;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -171,6 +181,15 @@ public class MainActivity : Activity
             requestCode,
             resultCode,
             data);
+
+            if (requestCode == ExportPngRequest)
+{
+    HandleExportPngResult(
+        resultCode,
+        data);
+
+    return;
+}
 
         if (requestCode != PickFileRequest)
             return;
@@ -652,6 +671,18 @@ public class MainActivity : Activity
             NavigateBack();
         };
 
+        Button exportButton =
+    new Button(this);
+
+exportButton.Text =
+    "EXPORT PNG";
+
+exportButton.Click +=
+    delegate
+    {
+        StartTexturePngExport(asset);
+    };
+
     TextView title =
         new TextView(this);
 
@@ -776,10 +807,16 @@ public class MainActivity : Activity
         info);
 
     root.AddView(
-        backButton);
+    backButton);
 
+if (asset.ClassId == 28)
+{
     root.AddView(
-        title);
+        exportButton);
+}
+
+root.AddView(
+    title);
 
     if (asset.ClassId == 28)
     {
@@ -795,6 +832,178 @@ public class MainActivity : Activity
 
     SetContentView(
         root);
+}
+
+private void StartTexturePngExport(
+    UnityAssetInfo asset)
+{
+    if (asset.ClassId != 28)
+        return;
+
+    pendingExportAsset =
+        asset;
+
+    string fileName =
+        string.IsNullOrWhiteSpace(asset.Name)
+            ? "texture.png"
+            : asset.Name + ".png";
+
+    foreach (char invalidChar
+        in System.IO.Path.GetInvalidFileNameChars())
+    {
+        fileName =
+            fileName.Replace(
+                invalidChar,
+                '_');
+    }
+
+    try
+    {
+        Intent intent =
+            new Intent(
+                Intent.ActionCreateDocument);
+
+        intent.AddCategory(
+            Intent.CategoryOpenable);
+
+        intent.SetType(
+            "image/png");
+
+        intent.PutExtra(
+            Intent.ExtraTitle,
+            fileName);
+
+        StartActivityForResult(
+            intent,
+            ExportPngRequest);
+    }
+    catch (Exception ex)
+    {
+        pendingExportAsset =
+            null;
+
+        status.Text =
+            "\nPNG EXPORT ERROR:\n" +
+            ex;
+    }
+}
+
+private void HandleExportPngResult(
+    Result resultCode,
+    Intent? data)
+{
+    UnityAssetInfo? asset =
+        pendingExportAsset;
+
+    pendingExportAsset =
+        null;
+
+    if (resultCode != Result.Ok)
+    {
+        return;
+    }
+
+    if (data == null)
+    {
+        status.Text =
+            "\nPNG EXPORT ERROR:\n" +
+            "No Intent data returned.";
+
+        return;
+    }
+
+    global::Android.Net.Uri? uri =
+        data.Data;
+
+    if (uri == null)
+    {
+        status.Text =
+            "\nPNG EXPORT ERROR:\n" +
+            "No destination URI returned.";
+
+        return;
+    }
+
+    if (asset == null)
+    {
+        status.Text =
+            "\nPNG EXPORT ERROR:\n" +
+            "No pending Texture2D asset.";
+
+        return;
+    }
+
+    try
+    {
+        ExportTexturePng(
+            asset,
+            uri);
+
+        status.Text =
+            "\n===== PNG EXPORT =====" +
+            "\nExport: OK" +
+            "\nAsset: " +
+            (string.IsNullOrEmpty(asset.Name)
+                ? "(unnamed)"
+                : asset.Name);
+    }
+    catch (Exception ex)
+    {
+        status.Text =
+            "\n===== PNG EXPORT =====" +
+            "\nEXPORT ERROR:" +
+            "\n" +
+            ex;
+    }
+}
+
+private void ExportTexturePng(
+    UnityAssetInfo asset,
+    global::Android.Net.Uri uri)
+{
+    if (asset.ClassId != 28)
+        throw new InvalidOperationException(
+            "Selected asset is not Texture2D.");
+
+    if (ContentResolver == null)
+        throw new InvalidOperationException(
+            "ContentResolver is null.");
+
+    Bitmap? bitmap =
+        BuildTexturePreview(asset);
+
+    if (bitmap == null)
+        throw new InvalidOperationException(
+            "Could not build texture bitmap.");
+
+    try
+    {
+        Stream? output =
+            ContentResolver.OpenOutputStream(uri);
+
+        if (output == null)
+            throw new IOException(
+                "Could not open destination output stream.");
+
+        using (output)
+        {
+            bool success =
+                bitmap.Compress(
+                    Bitmap.CompressFormat.Png,
+                    100,
+                    output);
+
+            if (!success)
+            {
+                throw new IOException(
+                    "Android Bitmap PNG compression failed.");
+            }
+        }
+    }
+    finally
+    {
+        bitmap.Dispose();
+    }
 }
 
 private string GetTexture2DInfo(
