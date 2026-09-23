@@ -1,0 +1,1808 @@
+using System;
+using System.IO;
+using System.Linq;
+using AssetsTools.NET;
+using AssetsTools.NET.Extra;
+using AssetsTools.NET.Texture;
+using UABEAvalonia;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using CoreTest.Inspectors;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Console.WriteLine("==============================================");
+        Console.WriteLine(" UABEA Browser V8.3 / Modular Asset Inspector");
+        Console.WriteLine("==============================================");
+
+        if (args.Length == 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Bundle path belum diberikan.");
+            Console.WriteLine();
+            Console.WriteLine("Usage:");
+            Console.WriteLine(
+                "dotnet run -- /storage/emulated/0/PROJECT_MOBOX/nama_file.unity3d");
+            return;
+        }
+
+        string path = args[0];
+
+        Console.WriteLine();
+        Console.WriteLine("Input bundle:");
+        Console.WriteLine(path);
+
+        if (!File.Exists(path))
+        {
+            Console.WriteLine();
+            Console.WriteLine("Bundle tidak ditemukan:");
+            Console.WriteLine(path);
+            return;
+        }
+
+        AssetsManager am = new AssetsManager();
+
+        Console.WriteLine();
+        Console.WriteLine("[1] Loading bundle...");
+
+        BundleFileInstance bundleInst;
+
+        try
+        {
+            bundleInst = am.LoadBundleFile(path, false);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Gagal LoadBundleFile.");
+            Console.WriteLine();
+            Console.WriteLine("EXCEPTION:");
+            Console.WriteLine(ex.ToString());
+            return;
+        }
+
+        if (bundleInst == null)
+        {
+            Console.WriteLine("Gagal LoadBundleFile.");
+            return;
+        }
+
+        AssetBundleFile bundle = bundleInst.file;
+
+        Console.WriteLine("[2] Unpacking bundle...");
+
+        MemoryStream bundleStream = new MemoryStream();
+
+        try
+        {
+            bundle.Unpack(
+                new AssetsFileWriter(bundleStream));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Gagal Unpack bundle.");
+            Console.WriteLine();
+            Console.WriteLine("EXCEPTION:");
+            Console.WriteLine(ex.ToString());
+            return;
+        }
+
+        bundleStream.Position = 0;
+
+        AssetBundleFile unpackedBundle =
+            new AssetBundleFile();
+
+        try
+        {
+            unpackedBundle.Read(
+                new AssetsFileReader(bundleStream));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Gagal membaca unpacked bundle.");
+            Console.WriteLine();
+            Console.WriteLine("EXCEPTION:");
+            Console.WriteLine(ex.ToString());
+            return;
+        }
+
+        AssetBundleDirectoryInfo[] dirs =
+            unpackedBundle.BlockAndDirInfo.DirectoryInfos;
+
+        AssetBundleDirectoryInfo? cabInfo = null;
+
+        foreach (AssetBundleDirectoryInfo dirInfo in dirs)
+        {
+            Console.WriteLine(
+                $"  {dirInfo.Name} | offset={dirInfo.Offset} | size={dirInfo.DecompressedSize}");
+
+            if (dirInfo.Name.StartsWith(
+                    "CAB-",
+                    StringComparison.OrdinalIgnoreCase)
+                &&
+                !dirInfo.Name.EndsWith(
+                    ".resS",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                cabInfo = dirInfo;
+            }
+        }
+
+        if (cabInfo == null)
+        {
+            Console.WriteLine();
+            Console.WriteLine("CAB utama tidak ditemukan.");
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Main CAB:");
+        Console.WriteLine($"Name   : {cabInfo.Name}");
+        Console.WriteLine($"Offset : {cabInfo.Offset}");
+        Console.WriteLine($"Size   : {cabInfo.DecompressedSize}");
+
+        Console.WriteLine();
+        Console.WriteLine("[3] Loading AssetsFile...");
+
+        AssetsFileInstance? assetsFile = null;
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "Menggunakan MANUAL CAB LOAD...");
+
+        AssetsFileReader cabReader =
+            unpackedBundle.DataReader;
+
+        try
+        {
+            cabReader.Position =
+                cabInfo.Offset;
+
+            byte[] cabBytes =
+                cabReader.ReadBytes(
+                    checked((int)cabInfo.DecompressedSize));
+
+            Console.WriteLine();
+            Console.WriteLine("CAB DEBUG:");
+            Console.WriteLine(
+                $"CAB bytes read : {cabBytes.Length}");
+
+            MemoryStream cabStream =
+                new MemoryStream(cabBytes);
+
+            try
+            {
+                assetsFile =
+                    am.LoadAssetsFile(
+                        cabStream,
+                        cabInfo.Name,
+                        false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Gagal LoadAssetsFile.");
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    "EXCEPTION:");
+
+                Console.WriteLine(
+                    ex.ToString());
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    "DEBUG INFO:");
+
+                Console.WriteLine(
+                    $"Input path      : {path}");
+
+                Console.WriteLine(
+                    $"Bundle path     : {bundleInst.path}");
+
+                Console.WriteLine(
+                    $"CAB name        : {cabInfo.Name}");
+
+                Console.WriteLine(
+                    $"CAB offset      : {cabInfo.Offset}");
+
+                Console.WriteLine(
+                    $"CAB size        : {cabInfo.DecompressedSize}");
+
+                Console.WriteLine(
+                    $"CAB bytes read  : {cabBytes.Length}");
+
+                Console.WriteLine(
+                    $"Directory count : {dirs.Length}");
+
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                "MANUAL CAB LOAD ERROR:");
+
+            Console.WriteLine(
+                ex.ToString());
+
+            return;
+        }
+
+        if (assetsFile == null)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                "Gagal LoadAssetsFile: result NULL.");
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "DEBUG INFO:");
+
+            Console.WriteLine(
+                $"Input path      : {path}");
+
+            Console.WriteLine(
+                $"Bundle path     : {bundleInst.path}");
+
+            Console.WriteLine(
+                $"CAB name        : {cabInfo.Name}");
+
+            Console.WriteLine(
+                $"CAB offset      : {cabInfo.Offset}");
+
+            Console.WriteLine(
+                $"CAB size        : {cabInfo.DecompressedSize}");
+
+            Console.WriteLine(
+                $"Directory count : {dirs.Length}");
+
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "AssetsFile berhasil dimuat.");
+
+        Console.WriteLine(
+            $"AssetsFile path : {assetsFile.path}");
+
+        Console.WriteLine(
+            $"ParentBundle    : {(assetsFile.parentBundle != null
+                ? "AVAILABLE"
+                : "NULL")}");
+
+        Console.WriteLine(
+            $"Asset count     : {assetsFile.file.AssetInfos.Count}");
+
+        Console.WriteLine(
+            $"External count  : {assetsFile.file.Metadata.Externals.Count}");
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "[4] Creating AssetWorkspace...");
+
+        AssetWorkspace workspace =
+            new AssetWorkspace(am, false);
+
+        workspace.LoadAssetsFile(
+            assetsFile,
+            false);
+
+        workspace.GenerateAssetsFileLookup();
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "==============================================");
+
+        Console.WriteLine(
+            " ASSET LIST");
+
+        Console.WriteLine(
+            "==============================================");
+
+        var assets =
+            workspace.LoadedAssets.Values.ToList();
+
+        for (int i = 0;
+             i < assets.Count;
+             i++)
+        {
+            AssetContainer cont =
+                assets[i];
+
+            string typeName =
+                GetTypeName(
+                    cont.ClassId);
+
+            string assetName =
+                GetAssetName(
+                    workspace,
+                    cont);
+
+            Console.WriteLine(
+                $"[{i,2}] {cont.ClassId,3}  {typeName,-25} " +
+                $"{cont.PathId,22}  {assetName}");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "Ketik index asset untuk Inspector.");
+
+        Console.WriteLine(
+            "Ketik q untuk keluar.");
+
+        while (true)
+        {
+            Console.WriteLine();
+            Console.Write("> ");
+
+            string? input =
+                Console.ReadLine();
+
+            if (input == null)
+                continue;
+
+            input =
+                input.Trim();
+
+            if (input.Equals(
+                "q",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            if (!int.TryParse(
+                input,
+                out int index))
+            {
+                Console.WriteLine(
+                    "Input harus berupa index.");
+
+                continue;
+            }
+
+            if (index < 0 ||
+                index >= assets.Count)
+            {
+                Console.WriteLine(
+                    "Index tidak valid.");
+
+                continue;
+            }
+
+            AssetContainer cont =
+                assets[index];
+
+            /*
+             * ======================================================
+             * MODULAR INSPECTOR DISPATCHER
+             * ======================================================
+             *
+             * Texture2D tetap menggunakan jalur V8.2 yang sudah
+             * terbukti working.
+             *
+             * Inspector asset baru diteruskan ke file terpisah.
+             */
+
+            if (cont.ClassId ==
+                (int)AssetClassID.Texture2D)
+            {
+                /*
+                 * ==================================================
+                 * V8.2 WORKING TEXTURE2D PATH
+                 * ==================================================
+                 *
+                 * JANGAN DIUBAH.
+                 */
+
+                DumpTextureInspector(
+                    workspace,
+                    cont,
+                    unpackedBundle);
+            }
+            else if (cont.ClassId ==
+                     (int)AssetClassID.ParticleSystem)
+            {
+                /*
+                 * ==================================================
+                 * PARTICLE SYSTEM
+                 * ==================================================
+                 */
+
+                ParticleSystemInspector.Dump(
+                    workspace,
+                    cont);
+            }
+            else if (cont.ClassId ==
+                     (int)AssetClassID.ParticleSystemRenderer)
+            {
+                /*
+                 * ==================================================
+                 * PARTICLE SYSTEM RENDERER
+                 * ==================================================
+                 */
+
+                ParticleSystemRendererInspector.Dump(
+                    workspace,
+                    cont);
+            }
+            else
+            {
+                /*
+                 * ==================================================
+                 * ASSET LAIN
+                 * ==================================================
+                 *
+                 * Inspector khusus belum dibuat.
+                 *
+                 * Nanti masing-masing asset dapat dibuat sebagai
+                 * file inspector terpisah tanpa mengganggu jalur
+                 * Texture2D maupun inspector lainnya.
+                 */
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    "----------------------------------------------");
+
+                Console.WriteLine(
+                    "Asset Inspector");
+
+                Console.WriteLine(
+                    "----------------------------------------------");
+
+                Console.WriteLine(
+                    $"TypeID : {cont.ClassId}");
+
+                Console.WriteLine(
+                    $"Type   : {GetTypeName(cont.ClassId)}");
+
+                Console.WriteLine(
+                    $"PathID : {cont.PathId}");
+
+                Console.WriteLine(
+                    $"Name   : {GetAssetName(workspace, cont)}");
+
+                Console.WriteLine();
+
+                Console.WriteLine(
+                    "Inspector khusus untuk asset ini belum dibuat.");
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "Selesai.");
+    }
+
+
+    static void DumpTextureInspector(
+        AssetWorkspace workspace,
+        AssetContainer cont,
+        AssetBundleFile unpackedBundle)
+    {
+        Console.WriteLine();
+        Console.WriteLine(
+            "================================================");
+
+        Console.WriteLine(
+            " Texture2D Inspector + PNG Export");
+
+        Console.WriteLine(
+            "================================================");
+
+        Console.WriteLine(
+            $"PathID       : {cont.PathId}");
+
+        string name =
+            GetAssetName(
+                workspace,
+                cont);
+
+        Console.WriteLine(
+            $"Name         : {name}");
+
+        try
+        {
+            AssetTypeValueField texBaseField =
+                TexturePlugin.TextureHelper.GetByteArrayTexture(
+                    workspace,
+                    cont);
+
+            if (texBaseField == null)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Gagal membuat Texture2D BaseField.");
+
+                return;
+            }
+
+            TextureFile texFile =
+                TextureFile.ReadTextureFile(
+                    texBaseField);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                " BASIC INFO");
+
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                $"Width        : {texFile.m_Width}");
+
+            Console.WriteLine(
+                $"Height       : {texFile.m_Height}");
+
+            Console.WriteLine(
+                $"TextureFormat: {(TextureFormat)texFile.m_TextureFormat}");
+
+            Console.WriteLine(
+                $"Format ID    : {texFile.m_TextureFormat}");
+
+            Console.WriteLine(
+                $"Mip Count    : {texFile.m_MipCount}");
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                " STREAM DATA");
+
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            TextureFile.StreamingInfo stream =
+                texFile.m_StreamData;
+
+            Console.WriteLine(
+                $"Path         : {stream.path}");
+
+            Console.WriteLine(
+                $"Offset       : {stream.offset}");
+
+            Console.WriteLine(
+                $"Size         : {stream.size}");
+
+            Console.WriteLine(
+                $"PictureData  : {(texFile.pictureData == null
+                    ? "NULL"
+                    : texFile.pictureData.Length + " bytes")}");
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                " PLATFORM");
+
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                $"TargetPlatform: {cont.FileInstance.file.Metadata.TargetPlatform}");
+
+            AssetTypeValueField platformBlobField =
+                texBaseField["m_PlatformBlob"];
+
+            if (platformBlobField == null ||
+                platformBlobField.IsDummy)
+            {
+                Console.WriteLine(
+                    "PlatformBlob  : NONE");
+            }
+            else
+            {
+                byte[] blob =
+                    TexturePlugin.TextureHelper.GetPlatformBlob(
+                        texBaseField);
+
+                Console.WriteLine(
+                    $"PlatformBlob  : {(blob == null
+                        ? "NULL"
+                        : blob.Length + " bytes")}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                " STORAGE CHECK");
+
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            if (stream.size != 0 &&
+                !string.IsNullOrEmpty(stream.path))
+            {
+                Console.WriteLine(
+                    "Storage       : Streaming texture");
+
+                Console.WriteLine(
+                    "Source        : .resS / external stream");
+            }
+            else
+            {
+                Console.WriteLine(
+                    "Storage       : Inline pictureData");
+            }
+
+            Console.WriteLine(
+                $"PictureData   : {(texFile.pictureData == null
+                    ? "NULL"
+                    : texFile.pictureData.Length + " bytes")}");
+
+            /*
+             * ======================================================
+             * TEXTURE DATA RESOLUTION
+             * ======================================================
+             */
+
+            byte[]? textureData =
+                texFile.pictureData;
+
+            if (textureData == null ||
+                textureData.Length == 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "PictureData kosong.");
+
+                Console.WriteLine(
+                    "Mencoba resolve texture dari .resS...");
+
+                if (stream.size == 0)
+                {
+                    Console.WriteLine(
+                        "m_StreamData.size = 0.");
+
+                    Console.WriteLine(
+                        "Tidak ada external texture data.");
+                }
+                else if (string.IsNullOrWhiteSpace(stream.path))
+                {
+                    Console.WriteLine(
+                        "m_StreamData.path kosong.");
+
+                    Console.WriteLine(
+                        "Tidak dapat mencari file .resS.");
+                }
+                else
+                {
+                    try
+                    {
+                        string searchPath =
+                            stream.path;
+
+                        Console.WriteLine();
+                        Console.WriteLine(
+                            "RESOLUTION DEBUG:");
+
+                        Console.WriteLine(
+                            $"Original stream path : {searchPath}");
+
+                        if (searchPath.StartsWith(
+                                "archive:/",
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            searchPath =
+                                searchPath.Substring(9);
+                        }
+
+                        searchPath =
+                            Path.GetFileName(
+                                searchPath);
+
+                        Console.WriteLine(
+                            $"Search .resS name     : {searchPath}");
+
+                        AssetBundleDirectoryInfo? streamInfo =
+                            null;
+
+                        foreach (
+                            AssetBundleDirectoryInfo dirInfo
+                            in unpackedBundle
+                                .BlockAndDirInfo
+                                .DirectoryInfos)
+                        {
+                            if (string.Equals(
+                                dirInfo.Name,
+                                searchPath,
+                                StringComparison.OrdinalIgnoreCase))
+                            {
+                                streamInfo =
+                                    dirInfo;
+
+                                break;
+                            }
+                        }
+
+                        if (streamInfo == null)
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine(
+                                ".resS tidak ditemukan di DirectoryInfos.");
+
+                            Console.WriteLine(
+                                "DirectoryInfos yang tersedia:");
+
+                            foreach (
+                                AssetBundleDirectoryInfo dirInfo
+                                in unpackedBundle
+                                    .BlockAndDirInfo
+                                    .DirectoryInfos)
+                            {
+                                Console.WriteLine(
+                                    $"  {dirInfo.Name} | " +
+                                    $"offset={dirInfo.Offset} | " +
+                                    $"size={dirInfo.DecompressedSize}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine(
+                                ".resS ditemukan.");
+
+                            Console.WriteLine(
+                                $"Name                : {streamInfo.Name}");
+
+                            Console.WriteLine(
+                                $"Directory Offset    : {streamInfo.Offset}");
+
+                            Console.WriteLine(
+                                $"Directory Size      : {streamInfo.DecompressedSize}");
+
+                            Console.WriteLine(
+                                $"Texture Offset      : {stream.offset}");
+
+                            Console.WriteLine(
+                                $"Texture Size        : {stream.size}");
+
+                            /*
+                             * stream.offset dan stream.size
+                             * adalah ulong pada versi
+                             * AssetsTools.NET yang sedang dipakai.
+                             */
+
+                            ulong endPosition =
+                                checked(
+                                    stream.offset +
+                                    stream.size);
+
+                            Console.WriteLine(
+                                $"Texture End         : {endPosition}");
+
+                            if (stream.offset >
+                                (ulong)long.MaxValue)
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine(
+                                    "ERROR: stream offset terlalu besar.");
+
+                                Console.WriteLine(
+                                    "Offset tidak dapat dikonversi ke posisi reader.");
+                            }
+                            else if (streamInfo.DecompressedSize < 0)
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine(
+                                    "ERROR: ukuran .resS negatif.");
+                            }
+                            else if (
+                                endPosition >
+                                (ulong)streamInfo.DecompressedSize)
+                            {
+                                Console.WriteLine();
+                                Console.WriteLine(
+                                    "ERROR: texture range berada di luar .resS.");
+
+                                Console.WriteLine(
+                                    $"End position        : {endPosition}");
+
+                                Console.WriteLine(
+                                    $"resS size           : {streamInfo.DecompressedSize}");
+                            }
+                            else
+                            {
+                                AssetsFileReader streamReader =
+                                    unpackedBundle.DataReader;
+
+                                /*
+                                 * Setelah pengecekan di atas,
+                                 * stream.offset aman dikonversi
+                                 * menjadi long.
+                                 */
+
+                                long absolutePosition =
+                                    checked(
+                                        streamInfo.Offset +
+                                        checked(
+                                            (long)stream.offset));
+
+                                Console.WriteLine();
+                                Console.WriteLine(
+                                    "Reading .resS...");
+
+                                Console.WriteLine(
+                                    $"Absolute position : {absolutePosition}");
+
+                                Console.WriteLine(
+                                    $"Read size         : {stream.size}");
+
+                                streamReader.Position =
+                                    absolutePosition;
+
+                                byte[] resolvedData =
+                                    streamReader.ReadBytes(
+                                        checked(
+                                            (int)stream.size));
+
+                                Console.WriteLine();
+                                Console.WriteLine(
+                                    "RES.S READ RESULT:");
+
+                                Console.WriteLine(
+                                    $"Bytes requested   : {stream.size}");
+
+                                Console.WriteLine(
+                                    $"Bytes received    : {resolvedData.Length}");
+
+                                if (resolvedData.Length == 0)
+                                {
+                                    Console.WriteLine();
+                                    Console.WriteLine(
+                                        "ERROR: .resS menghasilkan 0 bytes.");
+                                }
+                                else if (
+                                    (ulong)resolvedData.Length !=
+                                    stream.size)
+                                {
+                                    Console.WriteLine();
+                                    Console.WriteLine(
+                                        "WARNING: jumlah byte .resS tidak sesuai.");
+
+                                    Console.WriteLine(
+                                        $"Expected          : {stream.size}");
+
+                                    Console.WriteLine(
+                                        $"Received          : {resolvedData.Length}");
+                                }
+                                else
+                                {
+                                    textureData =
+                                        resolvedData;
+
+                                    Console.WriteLine();
+                                    Console.WriteLine(
+                                        ".resS texture berhasil di-resolve.");
+
+                                    Console.WriteLine(
+                                        $"Resolved data     : {textureData.Length} bytes");
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine(
+                            ".resS RESOLUTION ERROR:");
+
+                        Console.WriteLine(
+                            ex.GetType().Name);
+
+                        Console.WriteLine(
+                            ex.Message);
+
+                        Console.WriteLine();
+                        Console.WriteLine(
+                            ex.ToString());
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Inline pictureData tersedia.");
+
+                Console.WriteLine(
+                    $"Inline data       : {textureData.Length} bytes");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                " DECODER");
+
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            if (textureData == null ||
+                textureData.Length == 0)
+            {
+                Console.WriteLine(
+                    "Texture data kosong.");
+
+                Console.WriteLine(
+                    "Decoder tidak dijalankan.");
+
+                return;
+            }
+
+            TextureFormat format =
+                (TextureFormat)texFile.m_TextureFormat;
+
+            Console.WriteLine(
+                $"Decoder Format: {format}");
+
+            Console.WriteLine(
+                $"Input Bytes: {textureData.Length}");
+
+            bool managedSupported;
+
+            try
+            {
+                managedSupported =
+                    TexturePlugin.TextureEncoderDecoder
+                        .IsManagedDecodeSupported(
+                            format);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Managed decoder check ERROR:");
+
+                Console.WriteLine(
+                    ex.ToString());
+
+                return;
+            }
+
+            Console.WriteLine(
+                $"Managed decoder: {(managedSupported
+                    ? "SUPPORTED"
+                    : "NOT SUPPORTED")}");
+
+            if (!managedSupported)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Format ini belum didukung managed decoder.");
+
+                Console.WriteLine(
+                    "PNG export dilewati.");
+
+                return;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "Decoding...");
+
+            byte[] rgbaData;
+
+            try
+            {
+                rgbaData =
+                    TexturePlugin.TextureEncoderDecoder.Decode(
+                        textureData,
+                        texFile.m_Width,
+                        texFile.m_Height,
+                        format);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Decode ERROR:");
+
+                Console.WriteLine(
+                    ex.ToString());
+
+                return;
+            }
+
+            Console.WriteLine(
+                $"RGBA Bytes: {rgbaData.Length}");
+
+            long expectedRgba =
+                (long)texFile.m_Width *
+                (long)texFile.m_Height *
+                4L;
+
+            Console.WriteLine(
+                $"Expected RGBA: {expectedRgba}");
+
+            if (rgbaData.Length != expectedRgba)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "ERROR: ukuran RGBA tidak sesuai.");
+
+                Console.WriteLine(
+                    "PNG export dihentikan.");
+
+                return;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            Console.WriteLine(
+                " PNG EXPORT");
+
+            Console.WriteLine(
+                "----------------------------------------------");
+
+            string outputDirectory =
+                "/storage/emulated/0/PROJECT_MOBOX/export_test";
+
+            try
+            {
+                Directory.CreateDirectory(
+                    outputDirectory);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "Gagal membuat folder export:");
+
+                Console.WriteLine(
+                    ex.ToString());
+
+                return;
+            }
+
+            string safeName =
+                name;
+
+            if (string.IsNullOrWhiteSpace(safeName) ||
+                safeName == "-")
+            {
+                safeName =
+                    $"Texture2D_{cont.PathId}";
+            }
+
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                safeName =
+                    safeName.Replace(
+                        c,
+                        '_');
+            }
+
+            string outputPath =
+                Path.Combine(
+                    outputDirectory,
+                    safeName + ".png");
+
+            try
+            {
+                using (Image<Rgba32> image =
+                    Image.LoadPixelData<Rgba32>(
+                        rgbaData,
+                        texFile.m_Width,
+                        texFile.m_Height))
+                {
+                    /*
+                     * PNG export existing memang menggunakan
+                     * vertical flip.
+                     *
+                     * JANGAN DIUBAH pada tahap test ini.
+                     */
+                    image.Mutate(
+                        x => x.Flip(
+                            FlipMode.Vertical));
+
+                    using (FileStream outputStream =
+                        File.Create(outputPath))
+                    {
+                        image.Save(
+                            outputStream,
+                            new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+                    }
+                }
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    "PNG EXPORT SUCCESS");
+
+                Console.WriteLine(
+                    $"Output: {outputPath}");
+
+                /*
+                 * ==================================================
+                 * PNG → RGBA ROUNDTRIP TEST
+                 * ==================================================
+                 *
+                 * Test dilakukan terhadap PNG yang baru saja
+                 * dibuat di atas.
+                 *
+                 * Tidak ada encoder ETC1 di tahap ini.
+                 */
+                RunPngRgbaRoundtripTest(
+                    rgbaData,
+                    texFile.m_Width,
+                    texFile.m_Height,
+                    outputPath,
+                    outputDirectory,
+                    safeName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine(
+                    "PNG EXPORT ERROR:");
+
+                Console.WriteLine(
+                    ex.ToString());
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "================================================");
+
+            Console.WriteLine(
+                " END Texture2D Inspector");
+
+            Console.WriteLine(
+                "================================================");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                "Texture2D Inspector ERROR:");
+
+            Console.WriteLine(
+                ex.GetType().Name);
+
+            Console.WriteLine(
+                ex.Message);
+
+            Console.WriteLine();
+
+            Console.WriteLine(
+                ex.ToString());
+        }
+    }
+
+
+    /*
+     * ==============================================================
+     * PNG → RGBA ROUNDTRIP TEST
+     * ==============================================================
+     *
+     * Alur:
+     *
+     * Original decoded RGBA
+     *       ↓
+     * original_rgba.bin
+     *       ↓
+     * PNG export
+     *       ↓
+     * PNG read
+     *       ↓
+     * TexturePngImporter
+     *       ↓
+     * imported_rgba_raw.bin
+     *       ↓
+     * vertical flip kembali
+     *       ↓
+     * imported_rgba_normalized.bin
+     *       ↓
+     * compare dengan original
+     *
+     * Belum menyentuh encoder texture compressed.
+     */
+
+    static void RunPngRgbaRoundtripTest(
+        byte[] originalRgba,
+        int width,
+        int height,
+        string pngPath,
+        string outputDirectory,
+        string safeName)
+    {
+        Console.WriteLine();
+        Console.WriteLine(
+            "================================================");
+
+        Console.WriteLine(
+            " PNG → RGBA ROUNDTRIP TEST");
+
+        Console.WriteLine(
+            "================================================");
+
+        try
+        {
+            if (originalRgba == null)
+                throw new ArgumentNullException(
+                    nameof(originalRgba));
+
+            int expectedLength =
+                checked(
+                    width *
+                    height *
+                    4);
+
+            if (originalRgba.Length != expectedLength)
+            {
+                throw new InvalidOperationException(
+                    "Original RGBA size mismatch. Expected " +
+                    expectedLength +
+                    ", received " +
+                    originalRgba.Length +
+                    ".");
+            }
+
+            /*
+             * ------------------------------------------------------
+             * 1. SAVE ORIGINAL RGBA
+             * ------------------------------------------------------
+             */
+
+            string originalRgbaPath =
+                Path.Combine(
+                    outputDirectory,
+                    safeName + "_original_rgba.bin");
+
+            File.WriteAllBytes(
+                originalRgbaPath,
+                originalRgba);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "ORIGINAL RGBA");
+
+            Console.WriteLine(
+                $"Size   : {originalRgba.Length} bytes");
+
+            Console.WriteLine(
+                $"SHA256 : {GetSha256(originalRgba)}");
+
+            Console.WriteLine(
+                $"Output : {originalRgbaPath}");
+
+            /*
+             * ------------------------------------------------------
+             * 2. READ PNG
+             * ------------------------------------------------------
+             */
+
+            if (!File.Exists(pngPath))
+            {
+                throw new FileNotFoundException(
+                    "PNG export file tidak ditemukan.",
+                    pngPath);
+            }
+
+            byte[] pngData =
+                File.ReadAllBytes(
+                    pngPath);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "PNG INPUT");
+
+            Console.WriteLine(
+                $"Size : {pngData.Length} bytes");
+
+            Console.WriteLine(
+                $"Path : {pngPath}");
+
+            /*
+             * ------------------------------------------------------
+             * 3. PNG → RGBA
+             * ------------------------------------------------------
+             */
+
+            TexturePlugin.TexturePngImage imported =
+                TexturePlugin.TexturePngImporter.Load(
+                    pngData);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "IMPORTED RGBA");
+
+            Console.WriteLine(
+                $"Width  : {imported.Width}");
+
+            Console.WriteLine(
+                $"Height : {imported.Height}");
+
+            Console.WriteLine(
+                $"Bytes  : {imported.Rgba.Length}");
+
+            if (imported.Width != width ||
+                imported.Height != height)
+            {
+                throw new InvalidOperationException(
+                    "Imported PNG dimensions berbeda dari texture asli.");
+            }
+
+            if (imported.Rgba.Length != expectedLength)
+            {
+                throw new InvalidOperationException(
+                    "Imported RGBA size mismatch. Expected " +
+                    expectedLength +
+                    ", received " +
+                    imported.Rgba.Length +
+                    ".");
+            }
+
+            string importedRawPath =
+                Path.Combine(
+                    outputDirectory,
+                    safeName + "_imported_rgba_raw.bin");
+
+            File.WriteAllBytes(
+                importedRawPath,
+                imported.Rgba);
+
+            Console.WriteLine(
+                $"SHA256 : {GetSha256(imported.Rgba)}");
+
+            Console.WriteLine(
+                $"Output : {importedRawPath}");
+
+            /*
+             * ------------------------------------------------------
+             * 4. NORMALIZE VERTICAL ORIENTATION
+             * ------------------------------------------------------
+             *
+             * PNG export di atas menggunakan:
+             *
+             *     FlipMode.Vertical
+             *
+             * Jadi data hasil import secara visual/row-order
+             * berlawanan dengan original RGBA.
+             *
+             * Kita flip kembali sebelum comparison.
+             */
+
+            byte[] normalizedRgba =
+                FlipRgbaVertical(
+                    imported.Rgba,
+                    width,
+                    height);
+
+            string normalizedPath =
+                Path.Combine(
+                    outputDirectory,
+                    safeName + "_imported_rgba_normalized.bin");
+
+            File.WriteAllBytes(
+                normalizedPath,
+                normalizedRgba);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "NORMALIZED IMPORTED RGBA");
+
+            Console.WriteLine(
+                $"Size   : {normalizedRgba.Length} bytes");
+
+            Console.WriteLine(
+                $"SHA256 : {GetSha256(normalizedRgba)}");
+
+            Console.WriteLine(
+                $"Output : {normalizedPath}");
+
+            /*
+             * ------------------------------------------------------
+             * 5. COMPARE
+             * ------------------------------------------------------
+             */
+
+            RgbaCompareResult result =
+                CompareRgba(
+                    originalRgba,
+                    normalizedRgba);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                "COMPARE");
+
+            Console.WriteLine(
+                $"Original bytes   : {originalRgba.Length}");
+
+            Console.WriteLine(
+                $"Imported bytes   : {normalizedRgba.Length}");
+
+            Console.WriteLine(
+                $"Different bytes  : {result.DifferentBytes}");
+
+            Console.WriteLine(
+                $"Max channel error: {result.MaxChannelError}");
+
+            Console.WriteLine(
+                $"Average error    : {result.AverageError:F6}");
+
+            Console.WriteLine();
+
+            Console.WriteLine(
+                "CHANNEL DIFFERENCES");
+
+            Console.WriteLine(
+                $"R different      : {result.RedDifferent}");
+
+            Console.WriteLine(
+                $"G different      : {result.GreenDifferent}");
+
+            Console.WriteLine(
+                $"B different      : {result.BlueDifferent}");
+
+            Console.WriteLine(
+                $"A different      : {result.AlphaDifferent}");
+
+            Console.WriteLine();
+
+            if (result.DifferentBytes == 0)
+            {
+                Console.WriteLine(
+                    "RGBA ROUNDTRIP TEST: PASS");
+
+                Console.WriteLine(
+                    "PNG → RGBA menghasilkan byte yang identik.");
+            }
+            else
+            {
+                Console.WriteLine(
+                    "RGBA ROUNDTRIP TEST: DIFFERENT");
+
+                Console.WriteLine(
+                    "PNG → RGBA tidak identik setelah normalisasi Y.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                "RGBA ROUNDTRIP TEST ERROR:");
+
+            Console.WriteLine(
+                ex.GetType().Name);
+
+            Console.WriteLine(
+                ex.Message);
+
+            Console.WriteLine();
+
+            Console.WriteLine(
+                ex.ToString());
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "================================================");
+    }
+
+
+    /*
+     * ==============================================================
+     * SHA256
+     * ==============================================================
+     */
+
+    static string GetSha256(
+        byte[] data)
+    {
+        byte[] hash =
+            System.Security.Cryptography.SHA256.HashData(
+                data);
+
+        return Convert.ToHexString(
+            hash);
+    }
+
+
+    /*
+     * ==============================================================
+     * VERTICAL RGBA FLIP
+     * ==============================================================
+     *
+     * Hanya menukar urutan baris.
+     *
+     * Tidak mengubah:
+     * - R
+     * - G
+     * - B
+     * - A
+     *
+     * Tidak mengubah pixel order horizontal.
+     */
+
+    static byte[] FlipRgbaVertical(
+        byte[] rgba,
+        int width,
+        int height)
+    {
+        if (rgba == null)
+            throw new ArgumentNullException(
+                nameof(rgba));
+
+        int expectedLength =
+            checked(
+                width *
+                height *
+                4);
+
+        if (rgba.Length != expectedLength)
+        {
+            throw new ArgumentException(
+                "RGBA buffer size tidak sesuai.",
+                nameof(rgba));
+        }
+
+        byte[] result =
+            new byte[rgba.Length];
+
+        int rowBytes =
+            checked(
+                width *
+                4);
+
+        for (int y = 0;
+             y < height;
+             y++)
+        {
+            int sourceY =
+                height -
+                1 -
+                y;
+
+            Buffer.BlockCopy(
+                rgba,
+                sourceY * rowBytes,
+                result,
+                y * rowBytes,
+                rowBytes);
+        }
+
+        return result;
+    }
+
+
+    /*
+     * ==============================================================
+     * RGBA COMPARE RESULT
+     * ==============================================================
+     */
+
+    sealed class RgbaCompareResult
+    {
+        public int DifferentBytes;
+
+        public int RedDifferent;
+        public int GreenDifferent;
+        public int BlueDifferent;
+        public int AlphaDifferent;
+
+        public int MaxChannelError;
+
+        public long TotalChannelError;
+
+        public long ComparedChannels;
+
+        public double AverageError
+        {
+            get
+            {
+                if (ComparedChannels == 0)
+                    return 0.0;
+
+                return
+                    (double)TotalChannelError /
+                    ComparedChannels;
+            }
+        }
+    }
+
+
+    /*
+     * ==============================================================
+     * RGBA COMPARE
+     * ==============================================================
+     *
+     * Dibandingkan byte-per-byte.
+     *
+     * Karena RGBA sudah dinormalisasi Y sebelumnya,
+     * perbedaan yang keluar benar-benar menunjukkan perubahan
+     * data pixel, bukan sekadar orientation.
+     */
+
+    static RgbaCompareResult CompareRgba(
+        byte[] original,
+        byte[] imported)
+    {
+        if (original == null)
+            throw new ArgumentNullException(
+                nameof(original));
+
+        if (imported == null)
+            throw new ArgumentNullException(
+                nameof(imported));
+
+        if (original.Length != imported.Length)
+        {
+            throw new InvalidOperationException(
+                "RGBA buffer lengths berbeda. Original=" +
+                original.Length +
+                ", Imported=" +
+                imported.Length +
+                ".");
+        }
+
+        if ((original.Length % 4) != 0)
+        {
+            throw new InvalidOperationException(
+                "RGBA buffer bukan kelipatan 4.");
+        }
+
+        RgbaCompareResult result =
+            new RgbaCompareResult();
+
+        for (int i = 0;
+             i < original.Length;
+             i++)
+        {
+            int difference =
+                Math.Abs(
+                    original[i] -
+                    imported[i]);
+
+            if (difference != 0)
+            {
+                result.DifferentBytes++;
+            }
+
+            result.TotalChannelError +=
+                difference;
+
+            result.ComparedChannels++;
+
+            if (difference >
+                result.MaxChannelError)
+            {
+                result.MaxChannelError =
+                    difference;
+            }
+
+            switch (i % 4)
+            {
+                case 0:
+                    if (difference != 0)
+                        result.RedDifferent++;
+
+                    break;
+
+                case 1:
+                    if (difference != 0)
+                        result.GreenDifferent++;
+
+                    break;
+
+                case 2:
+                    if (difference != 0)
+                        result.BlueDifferent++;
+
+                    break;
+
+                case 3:
+                    if (difference != 0)
+                        result.AlphaDifferent++;
+
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+
+    static string GetAssetName(
+        AssetWorkspace workspace,
+        AssetContainer cont)
+    {
+        try
+        {
+            AssetTypeValueField? baseField =
+                workspace.GetBaseField(cont);
+
+            if (baseField != null)
+            {
+                AssetTypeValueField nameField =
+                    baseField["m_Name"];
+
+                if (nameField != null)
+                {
+                    string name =
+                        nameField.AsString;
+
+                    if (!string.IsNullOrEmpty(name))
+                        return name;
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return "-";
+    }
+
+
+    static string GetTypeName(
+        int classId)
+    {
+        switch ((AssetClassID)classId)
+        {
+            case AssetClassID.GameObject:
+                return "GameObject";
+
+            case AssetClassID.Transform:
+                return "Transform";
+
+            case AssetClassID.Texture2D:
+                return "Texture2D";
+
+            case AssetClassID.Mesh:
+                return "Mesh";
+
+            case AssetClassID.Material:
+                return "Material";
+
+            case AssetClassID.MeshRenderer:
+                return "MeshRenderer";
+
+            case AssetClassID.ParticleSystem:
+                return "ParticleSystem";
+
+            case AssetClassID.ParticleSystemRenderer:
+                return "ParticleSystemRenderer";
+
+            case AssetClassID.MeshFilter:
+                return "MeshFilter";
+
+            case AssetClassID.Animation:
+                return "Animation";
+
+            case AssetClassID.AnimationClip:
+                return "AnimationClip";
+
+            case AssetClassID.MonoBehaviour:
+                return "MonoBehaviour";
+
+            case AssetClassID.MonoScript:
+                return "MonoScript";
+
+            case AssetClassID.AssetBundle:
+                return "AssetBundle";
+
+            default:
+                return $"ClassID {classId}";
+        }
+    }
+}
