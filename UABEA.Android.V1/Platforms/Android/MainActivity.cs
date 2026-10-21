@@ -655,7 +655,8 @@ namespace UABEA.Android.V1
             if (cont == null)
                 throw new InvalidOperationException("AssetContainer not found.");
 
-            string tempPath = Path.Combine(CacheDir!.AbsolutePath, "temp_mesh.obj");
+            // FIX CS0104: Menggunakan System.IO.Path.Combine secara eksplisit
+            string tempPath = System.IO.Path.Combine(CacheDir!.AbsolutePath, "temp_mesh.obj");
 
             try
             {
@@ -728,7 +729,8 @@ namespace UABEA.Android.V1
 
             try
             {
-                if (!field.HasChildren)
+                // FIX CS1061: Memeriksa field.Children alih-alih HasChildren
+                if (field.Children == null || field.Children.Count == 0)
                 {
                     result += field.AsString + "\n";
                 }
