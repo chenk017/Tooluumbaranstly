@@ -1,10 +1,11 @@
 
-using System;                                                               using System.Globalization;
+using System;                                                               
+using System.Globalization;
 using System.IO;
 using System.Text;
 using AssetsTools.NET;
 
-namespace UABEA.Android.V1.Services;
+namespace UABEA.Android.V1.Services
 {
     public static class MeshObjExporter
     {

@@ -6,7 +6,7 @@ using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using UABEAvalonia;
 
-namespace UABEA.Android.V1.Services;
+namespace UABEA.Android.V1.Services
 {
     public static class MeshInspector
     {
