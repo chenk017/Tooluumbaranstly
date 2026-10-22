@@ -2,11 +2,12 @@ using System;
 using Android.Opengl;
 using Java.Nio;
 using Javax.Microedition.Khronos.Egl;
+using EGLConfig = Javax.Microedition.Khronos.Egl.EGLConfig;
 using Javax.Microedition.Khronos.Opengles;
 
 namespace UABEA.Android.V1.Services
 {
-    public sealed class MeshPreviewRenderer : GLSurfaceView.IRenderer
+    public sealed class MeshPreviewRenderer : Java.Lang.Object, GLSurfaceView.IRenderer
     {
         private readonly object geometryLock = new object();
 
