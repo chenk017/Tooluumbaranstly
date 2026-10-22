@@ -179,7 +179,6 @@ namespace UABEA.Android.V1.Services
 
             gl.GlClearColor(0.12f, 0.12f, 0.14f, 1f);
             gl.GlEnable(GL10.GlDepthTest);
-            gl.GlDisable(GL10.GlCullFace);
             gl.GlShadeModel(GL10.GlSmooth);
         }
 
