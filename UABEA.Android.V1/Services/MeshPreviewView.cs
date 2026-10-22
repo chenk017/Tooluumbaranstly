@@ -24,7 +24,7 @@ namespace UABEA.Android.V1.Services
             SetRenderer(meshRenderer);
             RenderMode = Rendermode.WhenDirty;
 
-            Focusable = ViewFocusability.Focusable;
+            Focusable = true;
         }
 
         public void SetGeometry(MeshGeometry geometry)
