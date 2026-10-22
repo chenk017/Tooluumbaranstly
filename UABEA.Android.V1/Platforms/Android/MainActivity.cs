@@ -457,6 +457,92 @@ namespace UABEA.Android.V1
             previewStatus.TextSize = 14;
             previewStatus.SetTextColor(Color.LightGray);
 
+            MeshPreviewView? meshPreview = null;
+
+            if (asset.ClassId == 43)
+            {
+                meshPreview = new MeshPreviewView(this);
+
+                meshPreview.PreviewError += message =>
+                {
+                    previewStatus.Text =
+                        "\n===== 3D MESH PREVIEW =====\n" + message;
+                };
+
+                LinearLayout.LayoutParams meshParams =
+                    new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MatchParent, 500);
+
+                meshPreview.LayoutParameters = meshParams;
+
+                try
+                {
+                    if (loadedBundle == null)
+                        throw new InvalidOperationException(
+                            "Bundle belum dimuat.");
+
+                    AssetContainer? meshContainer = null;
+
+                    foreach (AssetContainer candidate in
+                        loadedBundle.Workspace.LoadedAssets.Values)
+                    {
+                        if (candidate.ClassId == asset.ClassId &&
+                            candidate.PathId == asset.PathId)
+                        {
+                            meshContainer = candidate;
+                            break;
+                        }
+                    }
+
+                    if (meshContainer == null)
+                        throw new InvalidOperationException(
+                            "AssetContainer Mesh tidak ditemukan.");
+
+                    AssetTypeTemplateField template =
+                        loadedBundle.Workspace.GetTemplateField(meshContainer);
+
+                    AssetTypeValueField baseField =
+                        template.MakeValue(
+                            meshContainer.FileReader,
+                            meshContainer.FilePosition);
+
+                    if (baseField.IsDummy)
+                        throw new InvalidOperationException(
+                            "Data Mesh tidak dapat dibaca.");
+
+                    string previewObjPath = System.IO.Path.Combine(
+                        CacheDir!.AbsolutePath,
+                        "mesh_preview_" + Guid.NewGuid().ToString("N") + ".obj");
+
+                    MeshGeometry geometry =
+                        MeshGeometryReader.Read(baseField, previewObjPath);
+
+                    if (geometry.VertexCount > 65535)
+                    {
+                        previewStatus.Text =
+                            "\n===== 3D MESH PREVIEW =====\n" +
+                            "Mesh memiliki " + geometry.VertexCount +
+                            " vertex. Preview awal mendukung maksimal 65535.";
+                    }
+                    else
+                    {
+                        meshPreview.SetGeometry(geometry);
+
+                        previewStatus.Text =
+                            "\n===== 3D MESH PREVIEW =====\n" +
+                            "Vertex: " + geometry.VertexCount +
+                            "\nTriangles: " + geometry.TriangleCount +
+                            "\nGeser untuk memutar; cubit untuk zoom.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    previewStatus.Text =
+                        "\n===== 3D MESH PREVIEW =====\n" +
+                        "Preview error:\n" + ex.Message;
+                }
+            }
+
             if (asset.ClassId == 28)
             {
                 try
@@ -497,6 +583,11 @@ namespace UABEA.Android.V1
             {
                 root.AddView(previewStatus);
                 root.AddView(preview);
+            }
+            else if (asset.ClassId == 43 && meshPreview != null)
+            {
+                root.AddView(previewStatus);
+                root.AddView(meshPreview);
             }
 
             root.AddView(scroll);
